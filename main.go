@@ -7,13 +7,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const url = "https://old.reddit.com"
-
-type titleMsg []string
-
-type titleErr struct {
-	error
-}
+const (
+	BOLD_START = "\033[1m"
+	BOLD_END   = "\033[0m"
+)
 
 type post struct {
 	title        string
@@ -25,25 +22,26 @@ type post struct {
 }
 
 type model struct {
-	choices []string
-	cursor  int
-	err     error
+	err    error
+	posts  []post
+	cursor int
 }
 
 func (m model) Init() tea.Cmd {
 	return func() tea.Msg {
-		return getPosts()
+		posts := getPosts()
+		return posts
 	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case titleErr:
-		m.err = msg.error
+	case getPostsErr:
+		m.err = msg
 		return m, tea.Quit
-	case titleMsg:
-		m.choices = msg
-		return m, tea.Quit
+	case postsMsg:
+		m.posts = msg
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -53,7 +51,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor--
 			}
 		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
+			if m.cursor < len(m.posts)-1 {
 				m.cursor++
 			}
 		}
@@ -63,24 +61,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := "reddit.com"
+	s := "reddit.com\n\n"
 
-	for i, choice := range m.choices {
+	for i, post := range m.posts {
 		cursor := " "
 		if m.cursor == i {
 			cursor = ">"
 		}
 
-		s += fmt.Sprintf("%s - %s\n", cursor, choice)
+		s += "      +------------------------------------------------------------------------------------------+"
+		s += fmt.Sprintf("\n      |  %s%s%s\n", BOLD_START, post.title, BOLD_END)
+		s += fmt.Sprintf(" %s    |%91s", cursor, "|")
+		s += fmt.Sprintf("\n      |  %-20s %65s |\n", post.subreddit, post.friendlyDate)
 	}
 
+	s += "      +------------------------------------------------------------------------------------------+\n\n"
 	s += "\nPress q to quit.\n"
 
 	return s
 }
 
 func main() {
-	p := tea.NewProgram(model{})
+	p := tea.NewProgram(model{}, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}

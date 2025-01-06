@@ -10,6 +10,16 @@ import (
 	"golang.org/x/net/html"
 )
 
+const (
+	URL       = "https://old.reddit.com"
+	MAX_POSTS = 10
+)
+
+type (
+	postsMsg    []post
+	getPostsErr error
+)
+
 type htmlNode struct {
 	*html.Node
 }
@@ -56,9 +66,9 @@ func (n htmlNode) NodeEquals(tag, class string) bool {
 
 func getPosts() tea.Msg {
 	client := &http.Client{}
-	res, err := client.Get(url)
+	res, err := client.Get(URL)
 	if err != nil {
-		return titleErr{err}
+		return getPostsErr(err)
 	}
 
 	defer res.Body.Close()
@@ -68,19 +78,21 @@ func getPosts() tea.Msg {
 		log.Fatal("Could not html parse reddit home page")
 	}
 
-	return nil
+	var posts []post
+	posts = getPostsHelper(doc, posts)
+	return postsMsg(posts)
 }
 
 func getPostsHelper(n *html.Node, posts []post) []post {
-	if n == nil {
-		return posts
-	}
-
-	for c := range n.ChildNodes() {
+	for c := range n.Descendants() {
 		node := htmlNode{c}
 		if node.NodeEquals("div", "entry") {
 			p := createPost(node)
 			posts = append(posts, p)
+
+			if len(posts) >= MAX_POSTS {
+				break
+			}
 		}
 	}
 
@@ -91,12 +103,16 @@ func createPost(n htmlNode) post {
 	var p post
 	for c := range n.Descendants() {
 		cNode := htmlNode{c}
+
 		if cNode.NodeEquals("a", "title") {
 			p.title = cNode.Text()
+			p.postUrl = cNode.GetAttr("href")
 		} else if cNode.NodeEquals("a", "author") {
 			p.author = cNode.Text()
 		} else if cNode.NodeEquals("a", "subreddit") {
-			p.author = cNode.Text()
+			p.subreddit = cNode.Text()
+		} else if cNode.NodeEquals("a", "comments") {
+			p.commentsUrl = cNode.GetAttr("href")
 		} else if cNode.NodeEquals("time", "live-timestamp") {
 			p.friendlyDate = cNode.Text()
 		}
