@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/net/html"
 )
 
@@ -64,11 +63,11 @@ func (n htmlNode) NodeEquals(tag, class string) bool {
 	return n.TagEquals(tag) && n.ClassContains(class)
 }
 
-func getPosts() tea.Msg {
+func getPosts() ([]post, error) {
 	client := &http.Client{}
 	res, err := client.Get(URL)
 	if err != nil {
-		return getPostsErr(err)
+		return nil, err
 	}
 
 	defer res.Body.Close()
@@ -80,10 +79,14 @@ func getPosts() tea.Msg {
 
 	var posts []post
 	posts = getPostsHelper(doc, posts)
-	return postsMsg(posts)
+	return posts, nil
 }
 
 func getPostsHelper(n *html.Node, posts []post) []post {
+	if n == nil {
+		return posts
+	}
+
 	for c := range n.Descendants() {
 		node := htmlNode{c}
 		if node.NodeEquals("div", "entry") {
@@ -111,8 +114,6 @@ func createPost(n htmlNode) post {
 			p.author = cNode.Text()
 		} else if cNode.NodeEquals("a", "subreddit") {
 			p.subreddit = cNode.Text()
-		} else if cNode.NodeEquals("a", "comments") {
-			p.commentsUrl = cNode.GetAttr("href")
 		} else if cNode.NodeEquals("time", "live-timestamp") {
 			p.friendlyDate = cNode.Text()
 		}

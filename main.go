@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"os"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
-const (
-	BOLD_START = "\033[1m"
-	BOLD_END   = "\033[0m"
-)
+var docStyle = lipgloss.NewStyle().Margin(1, 2)
+
+const url = "https://old.reddit.com"
 
 type post struct {
 	title        string
@@ -21,69 +22,68 @@ type post struct {
 	commentsUrl  string
 }
 
+func (p post) Title() string {
+	return p.title
+}
+
+func (p post) Description() string {
+	return fmt.Sprintf("%s %s", p.subreddit, p.friendlyDate)
+}
+
+func (p post) FilterValue() string {
+	return p.title
+}
+
+type posts []post
+
 type model struct {
-	err    error
-	posts  []post
+	list   list.Model
 	cursor int
 }
 
 func (m model) Init() tea.Cmd {
-	return func() tea.Msg {
-		posts := getPosts()
-		return posts
-	}
+	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case getPostsErr:
-		m.err = msg
-		return m, tea.Quit
-	case postsMsg:
-		m.posts = msg
-		return m, nil
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch keypress := msg.String(); keypress {
+		case "q", "ctrl+c":
 			return m, tea.Quit
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case "down", "j":
-			if m.cursor < len(m.posts)-1 {
-				m.cursor++
-			}
 		}
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
-	return m, nil
+	var cmd tea.Cmd
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
 }
 
 func (m model) View() string {
-	s := "reddit.com\n\n"
-
-	for i, post := range m.posts {
-		cursor := " "
-		if m.cursor == i {
-			cursor = ">"
-		}
-
-		s += "      +------------------------------------------------------------------------------------------+"
-		s += fmt.Sprintf("\n      |  %s%s%s\n", BOLD_START, post.title, BOLD_END)
-		s += fmt.Sprintf(" %s    |%91s", cursor, "|")
-		s += fmt.Sprintf("\n      |  %-20s %65s |\n", post.subreddit, post.friendlyDate)
-	}
-
-	s += "      +------------------------------------------------------------------------------------------+\n\n"
-	s += "\nPress q to quit.\n"
-
-	return s
+	return docStyle.Render(m.list.View())
 }
 
 func main() {
-	p := tea.NewProgram(model{}, tea.WithAltScreen())
+	posts, err := getPosts()
+	if err != nil {
+		fmt.Printf("Could not load reddit posts: %v", err)
+		os.Exit(1)
+	}
+
+	var items []list.Item
+	for _, p := range posts {
+		items = append(items, p)
+	}
+
+	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
+	m.list.Title = "reddit.com"
+
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		log.Fatal(err)
+		fmt.Println("Error running program:", err)
+		os.Exit(1)
 	}
 }
