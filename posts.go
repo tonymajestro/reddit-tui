@@ -88,7 +88,7 @@ func getPostsHelper(n *html.Node, posts []post) []post {
 
 	for c := range n.Descendants() {
 		node := htmlNode{c}
-		if node.NodeEquals("div", "entry") {
+		if node.NodeEquals("div", "thing") {
 			p := createPost(node)
 			posts = append(posts, p)
 		}
@@ -111,6 +111,11 @@ func createPost(n htmlNode) post {
 			p.subreddit = cNode.Text()
 		} else if cNode.NodeEquals("time", "live-timestamp") {
 			p.friendlyDate = cNode.Text()
+		} else if cNode.NodeEquals("a", "comments") {
+			p.commentsUrl = cNode.GetAttr("href")
+			p.totalComments = strings.Fields(cNode.Text())[0]
+		} else if cNode.NodeEquals("div", "likes") {
+			p.totalLikes = cNode.Text()
 		}
 	}
 

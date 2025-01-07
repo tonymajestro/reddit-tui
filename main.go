@@ -13,12 +13,14 @@ import (
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type post struct {
-	title        string
-	author       string
-	subreddit    string
-	friendlyDate string
-	postUrl      string
-	commentsUrl  string
+	title         string
+	author        string
+	subreddit     string
+	friendlyDate  string
+	postUrl       string
+	commentsUrl   string
+	totalComments string
+	totalLikes    string
 }
 
 func (p post) Title() string {
@@ -26,7 +28,7 @@ func (p post) Title() string {
 }
 
 func (p post) Description() string {
-	return fmt.Sprintf("%s  %s", p.subreddit, p.friendlyDate)
+	return fmt.Sprintf(" %s  %s  %s comments  %s", p.totalLikes, p.subreddit, p.totalComments, p.friendlyDate)
 }
 
 func (p post) FilterValue() string {
@@ -65,6 +67,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "c", "C":
 			return m, tea.Quit
 		}
 	case tea.WindowSizeMsg:
