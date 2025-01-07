@@ -10,8 +10,7 @@ import (
 )
 
 const (
-	URL       = "https://old.reddit.com"
-	MAX_POSTS = 10
+	URL = "https://old.reddit.com/"
 )
 
 type (
@@ -92,10 +91,6 @@ func getPostsHelper(n *html.Node, posts []post) []post {
 		if node.NodeEquals("div", "entry") {
 			p := createPost(node)
 			posts = append(posts, p)
-
-			if len(posts) >= MAX_POSTS {
-				break
-			}
 		}
 	}
 

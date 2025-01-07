@@ -5,13 +5,12 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
-
-const url = "https://old.reddit.com"
 
 type post struct {
 	title        string
@@ -27,7 +26,7 @@ func (p post) Title() string {
 }
 
 func (p post) Description() string {
-	return fmt.Sprintf("%s %s", p.subreddit, p.friendlyDate)
+	return fmt.Sprintf("%s  %s", p.subreddit, p.friendlyDate)
 }
 
 func (p post) FilterValue() string {
@@ -37,16 +36,32 @@ func (p post) FilterValue() string {
 type posts []post
 
 type model struct {
-	list   list.Model
-	cursor int
+	list    list.Model
+	spinner spinner.Model
+	loading bool
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return tea.Batch(m.spinner.Tick, func() tea.Msg {
+		posts, err := getPosts()
+		if err != nil {
+			fmt.Printf("Could not load reddit posts: %v", err)
+			os.Exit(1)
+		}
+
+		var items []list.Item
+		for _, p := range posts {
+			items = append(items, p)
+		}
+		return items
+	})
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case []list.Item:
+		m.list.SetItems(msg)
+		m.loading = false
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "q", "ctrl+c":
@@ -55,6 +70,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	}
 
 	var cmd tea.Cmd
@@ -63,22 +82,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return docStyle.Render(m.list.View())
+	if !m.loading {
+		return docStyle.Render(m.list.View())
+	}
+
+	// Render spinner
+	return fmt.Sprintf("\n\n\n\n\n\n        %s  loading reddit.com...", m.spinner.View())
 }
 
 func main() {
-	posts, err := getPosts()
-	if err != nil {
-		fmt.Printf("Could not load reddit posts: %v", err)
-		os.Exit(1)
+	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
+	l.Title = "reddit.com"
+	spin := spinner.New()
+	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	spin.Spinner = spinner.Dot
+
+	m := model{
+		list:    l,
+		spinner: spin,
+		loading: true,
 	}
 
-	var items []list.Item
-	for _, p := range posts {
-		items = append(items, p)
-	}
-
-	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
 	m.list.Title = "reddit.com"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
