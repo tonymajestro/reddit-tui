@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -39,25 +38,27 @@ type posts []post
 
 type model struct {
 	list    list.Model
-	spinner spinner.Model
+	spinner redditSpinner
 	loading bool
 	w, h    int
 }
 
-func (m model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, func() tea.Msg {
-		posts, err := getPosts()
-		if err != nil {
-			fmt.Printf("Could not load reddit posts: %v", err)
-			os.Exit(1)
-		}
+func GetListItems() tea.Msg {
+	posts, err := getPosts()
+	if err != nil {
+		fmt.Printf("Could not load reddit posts: %v", err)
+		os.Exit(1)
+	}
 
-		var items []list.Item
-		for _, p := range posts {
-			items = append(items, p)
-		}
-		return items
-	})
+	var items []list.Item
+	for _, p := range posts {
+		items = append(items, p)
+	}
+	return items
+}
+
+func (m model) Init() tea.Cmd {
+	return tea.Batch(m.spinner.Init(), GetListItems)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -75,16 +76,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
-		m.w, m.h = msg.Width-h, msg.Height-v
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
 	}
 
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	var listCmd, spinnerCmd tea.Cmd
+	m.list, listCmd = m.list.Update(msg)
+	m.spinner, spinnerCmd = m.spinner.Update(msg)
+	return m, tea.Batch(listCmd, spinnerCmd)
 }
 
 func (m model) View() string {
@@ -92,7 +89,7 @@ func (m model) View() string {
 		return docStyle.Render(m.list.View())
 	}
 
-	return ViewSpinner(m.spinner, m.w, m.h)
+	return m.spinner.View()
 }
 
 func main() {
