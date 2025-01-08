@@ -41,6 +41,7 @@ type model struct {
 	list    list.Model
 	spinner spinner.Model
 	loading bool
+	w, h    int
 }
 
 func (m model) Init() tea.Cmd {
@@ -74,6 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.w, m.h = msg.Width-h, msg.Height-v
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -90,16 +92,14 @@ func (m model) View() string {
 		return docStyle.Render(m.list.View())
 	}
 
-	// Render spinner
-	return fmt.Sprintf("\n\n\n\n\n\n        %s  loading reddit.com...", m.spinner.View())
+	return ViewSpinner(m.spinner, m.w, m.h)
 }
 
 func main() {
 	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	l.Title = "reddit.com"
-	spin := spinner.New()
-	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-	spin.Spinner = spinner.Dot
+
+	spin := NewSpinner()
 
 	m := model{
 		list:    l,
