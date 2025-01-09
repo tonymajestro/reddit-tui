@@ -9,14 +9,37 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const defaultSpinnerTitle = "reddit.com"
+
 var spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
 
-type redditSpinner struct {
-	model spinner.Model
-	w, h  int
+type (
+	showSpinnerMsg struct {
+		desc string
+	}
+	hideSpinnerMsg struct{}
+)
+
+func showSpinner(title string) tea.Cmd {
+	return func() tea.Msg {
+		return showSpinnerMsg{title}
+	}
 }
 
-func NewSpinner() redditSpinner {
+func hideSpinner() tea.Cmd {
+	return func() tea.Msg {
+		return hideSpinnerMsg{}
+	}
+}
+
+type redditSpinner struct {
+	model  spinner.Model
+	title  string
+	w, h   int
+	active bool
+}
+
+func NewRedditSpinner() redditSpinner {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinnerStyle
@@ -26,22 +49,36 @@ func NewSpinner() redditSpinner {
 	}
 }
 
+func (s *redditSpinner) enable() {
+	s.active = true
+}
+
+func (s *redditSpinner) disable() {
+	s.active = false
+}
+
 func (s redditSpinner) Init() tea.Cmd {
 	return s.model.Tick
 }
 
 func (s redditSpinner) Update(msg tea.Msg) (redditSpinner, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	case showSpinnerMsg:
+		s.enable()
+		s.title = msg.desc
+
+	case hideSpinnerMsg:
+		s.disable()
+
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
+		h, v := listStyle.GetFrameSize()
 		s.w, s.h = msg.Width-h, msg.Height-v
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		s.model, cmd = s.model.Update(msg)
-		return s, cmd
 	}
 
-	return s, nil
+	var cmd tea.Cmd
+	s.model, cmd = s.model.Update(msg)
+	return s, cmd
 }
 
 func (s redditSpinner) View() string {
@@ -50,7 +87,7 @@ func (s redditSpinner) View() string {
 		sb.WriteString("\n")
 	}
 
-	loadingMessage := fmt.Sprintf("%s %s", s.model.View(), "loading reddit.com...")
+	loadingMessage := fmt.Sprintf("%s loading %s...", s.model.View(), s.title)
 	var line strings.Builder
 	for range s.w/2 - 12 {
 		line.WriteString(" ")

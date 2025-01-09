@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	URL = "https://old.reddit.com/"
+	homeUrl      = "https://old.reddit.com/r/all"
+	subredditUrl = "https://old.reddit.com/r/"
 )
 
 type (
@@ -34,17 +35,17 @@ func (n htmlNode) GetAttr(key string) string {
 	return ""
 }
 
-func (n htmlNode) Classes() []string {
+func (n htmlNode) classes() []string {
 	classes := n.GetAttr("class")
 	return strings.Fields(classes)
 }
 
-func (n htmlNode) ClassContains(c string) bool {
-	classes := n.Classes()
+func (n htmlNode) classContains(c string) bool {
+	classes := n.classes()
 	return slices.Contains(classes, c)
 }
 
-func (n htmlNode) Text() string {
+func (n htmlNode) text() string {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.TextNode {
 			return c.Data
@@ -54,17 +55,26 @@ func (n htmlNode) Text() string {
 	return ""
 }
 
-func (n htmlNode) TagEquals(tag string) bool {
+func (n htmlNode) tagEquals(tag string) bool {
 	return n.Type == html.ElementNode && n.Data == tag
 }
 
-func (n htmlNode) NodeEquals(tag, class string) bool {
-	return n.TagEquals(tag) && n.ClassContains(class)
+func (n htmlNode) nodeEquals(tag, class string) bool {
+	return n.tagEquals(tag) && n.classContains(class)
 }
 
-func getPosts() ([]post, error) {
+func getHomePosts() ([]post, error) {
+	return getPosts(homeUrl)
+}
+
+func getSubredditPosts(subreddit string) ([]post, error) {
+	url := subredditUrl + subreddit
+	return getPosts(url)
+}
+
+func getPosts(url string) ([]post, error) {
 	client := &http.Client{}
-	res, err := client.Get(URL)
+	res, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -77,18 +87,18 @@ func getPosts() ([]post, error) {
 	}
 
 	var posts []post
-	posts = getPostsHelper(doc, posts)
+	posts = populatePosts(doc, posts)
 	return posts, nil
 }
 
-func getPostsHelper(n *html.Node, posts []post) []post {
+func populatePosts(n *html.Node, posts []post) []post {
 	if n == nil {
 		return posts
 	}
 
 	for c := range n.Descendants() {
 		node := htmlNode{c}
-		if node.NodeEquals("div", "thing") {
+		if node.nodeEquals("div", "thing") {
 			p := createPost(node)
 			posts = append(posts, p)
 		}
@@ -102,20 +112,20 @@ func createPost(n htmlNode) post {
 	for c := range n.Descendants() {
 		cNode := htmlNode{c}
 
-		if cNode.NodeEquals("a", "title") {
-			p.title = cNode.Text()
+		if cNode.nodeEquals("a", "title") {
+			p.title = cNode.text()
 			p.postUrl = cNode.GetAttr("href")
-		} else if cNode.NodeEquals("a", "author") {
-			p.author = cNode.Text()
-		} else if cNode.NodeEquals("a", "subreddit") {
-			p.subreddit = cNode.Text()
-		} else if cNode.NodeEquals("time", "live-timestamp") {
-			p.friendlyDate = cNode.Text()
-		} else if cNode.NodeEquals("a", "comments") {
+		} else if cNode.nodeEquals("a", "author") {
+			p.author = cNode.text()
+		} else if cNode.nodeEquals("a", "subreddit") {
+			p.subreddit = cNode.text()
+		} else if cNode.nodeEquals("time", "live-timestamp") {
+			p.friendlyDate = cNode.text()
+		} else if cNode.nodeEquals("a", "comments") {
 			p.commentsUrl = cNode.GetAttr("href")
-			p.totalComments = strings.Fields(cNode.Text())[0]
-		} else if cNode.NodeEquals("div", "likes") {
-			p.totalLikes = cNode.Text()
+			p.totalComments = strings.Fields(cNode.text())[0]
+		} else if cNode.nodeEquals("div", "likes") {
+			p.totalLikes = cNode.text()
 		}
 	}
 

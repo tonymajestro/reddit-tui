@@ -4,107 +4,46 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
-
-type post struct {
-	title         string
-	author        string
-	subreddit     string
-	friendlyDate  string
-	postUrl       string
-	commentsUrl   string
-	totalComments string
-	totalLikes    string
-}
-
-func (p post) Title() string {
-	return p.title
-}
-
-func (p post) Description() string {
-	return fmt.Sprintf(" %s  %s  %s comments  %s", p.totalLikes, p.subreddit, p.totalComments, p.friendlyDate)
-}
-
-func (p post) FilterValue() string {
-	return p.title
-}
-
-type posts []post
-
 type model struct {
-	list    list.Model
-	spinner redditSpinner
-	loading bool
-	w, h    int
-}
-
-func GetListItems() tea.Msg {
-	posts, err := getPosts()
-	if err != nil {
-		fmt.Printf("Could not load reddit posts: %v", err)
-		os.Exit(1)
-	}
-
-	var items []list.Item
-	for _, p := range posts {
-		items = append(items, p)
-	}
-	return items
+	postsList      postsList
+	subredditInput subredditInput
+	w, h           int
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Init(), GetListItems)
+	return tea.Batch(
+		m.postsList.Init(),
+		m.subredditInput.Init())
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case []list.Item:
-		m.list.SetItems(msg)
-		m.loading = false
-	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "c", "C":
-			return m, tea.Quit
-		}
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
-	}
+	var postsListCmd, subredditInputCmd tea.Cmd
 
-	var listCmd, spinnerCmd tea.Cmd
-	m.list, listCmd = m.list.Update(msg)
-	m.spinner, spinnerCmd = m.spinner.Update(msg)
-	return m, tea.Batch(listCmd, spinnerCmd)
+	m.postsList, postsListCmd = m.postsList.Update(msg)
+	m.subredditInput, subredditInputCmd = m.subredditInput.Update(msg)
+
+	return m, tea.Batch(postsListCmd, subredditInputCmd)
 }
 
 func (m model) View() string {
-	if !m.loading {
-		return docStyle.Render(m.list.View())
+	if m.subredditInput.active {
+		return m.subredditInput.View()
+	} else {
+		return m.postsList.View()
 	}
-
-	return m.spinner.View()
 }
 
 func main() {
-	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "reddit.com"
-
-	spin := NewSpinner()
+	postsList := newPostsList()
+	subredditInput := NewSubredditInput()
 
 	m := model{
-		list:    l,
-		spinner: spin,
-		loading: true,
+		postsList:      postsList,
+		subredditInput: subredditInput,
 	}
-
-	m.list.Title = "reddit.com"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
