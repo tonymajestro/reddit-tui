@@ -1,4 +1,4 @@
-package main
+package reddit
 
 import (
 	"log"
@@ -23,7 +23,16 @@ type htmlNode struct {
 	*html.Node
 }
 
-func (n htmlNode) GetAttr(key string) string {
+func GetHomePosts() ([]post, error) {
+    return getPosts(homeUrl)
+}
+
+func GetSubredditPosts(subreddit string) ([]post, error) {
+    url := subredditUrl + subreddit
+    return getPosts(url)
+}
+
+func (n htmlNode) getAttr(key string) string {
 	for _, attr := range n.Attr {
 		if attr.Key != key {
 			continue
@@ -36,7 +45,7 @@ func (n htmlNode) GetAttr(key string) string {
 }
 
 func (n htmlNode) classes() []string {
-	classes := n.GetAttr("class")
+	classes := n.getAttr("class")
 	return strings.Fields(classes)
 }
 
@@ -61,15 +70,6 @@ func (n htmlNode) tagEquals(tag string) bool {
 
 func (n htmlNode) nodeEquals(tag, class string) bool {
 	return n.tagEquals(tag) && n.classContains(class)
-}
-
-func getHomePosts() ([]post, error) {
-	return getPosts(homeUrl)
-}
-
-func getSubredditPosts(subreddit string) ([]post, error) {
-	url := subredditUrl + subreddit
-	return getPosts(url)
 }
 
 func getPosts(url string) ([]post, error) {
@@ -114,7 +114,7 @@ func createPost(n htmlNode) post {
 
 		if cNode.nodeEquals("a", "title") {
 			p.title = cNode.text()
-			p.postUrl = cNode.GetAttr("href")
+			p.postUrl = cNode.getAttr("href")
 		} else if cNode.nodeEquals("a", "author") {
 			p.author = cNode.text()
 		} else if cNode.nodeEquals("a", "subreddit") {
@@ -122,7 +122,7 @@ func createPost(n htmlNode) post {
 		} else if cNode.nodeEquals("time", "live-timestamp") {
 			p.friendlyDate = cNode.text()
 		} else if cNode.nodeEquals("a", "comments") {
-			p.commentsUrl = cNode.GetAttr("href")
+			p.commentsUrl = cNode.getAttr("href")
 			p.totalComments = strings.Fields(cNode.text())[0]
 		} else if cNode.nodeEquals("div", "likes") {
 			p.totalLikes = cNode.text()
