@@ -6,13 +6,16 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
 
 const (
-	homeUrl      = "https://old.reddit.com"
-	subredditUrl = "https://old.reddit.com/r/"
+	homeUrl        = "https://old.reddit.com"
+	subredditUrl   = "https://old.reddit.com/r/"
+	userAgentKey   = "User-Agent"
+	userAgentValue = "Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0"
 )
 
 type RedditClient struct {
@@ -20,7 +23,9 @@ type RedditClient struct {
 }
 
 func New() RedditClient {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Duration(10) * time.Second,
+	}
 	return RedditClient{client}
 }
 
@@ -39,6 +44,12 @@ func (r RedditClient) getPosts(url string) ([]Post, error) {
 	if url == homeUrl {
 		reader, _ = os.Open("samples/home.html")
 	} else {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add(userAgentKey, userAgentValue)
+
 		res, err := r.client.Get(url)
 		if err != nil {
 			return nil, err
