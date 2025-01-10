@@ -2,6 +2,7 @@ package reddit
 
 import (
 	"fmt"
+	"reddittui/client"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,6 +14,7 @@ const defaultListTitle = "reddit.com"
 var listStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type RedditTui struct {
+	redditClient   client.RedditClient
 	postsList      list.Model
 	spinner        RedditSpinner
 	subredditInput SubredditInput
@@ -29,8 +31,14 @@ func NewRedditTui() RedditTui {
 	spinner.Focus()
 
 	subredditInput := NewSubredditInput()
+	redditClient := client.New()
 
-	return RedditTui{postsList, spinner, subredditInput, false, 0, 0}
+	return RedditTui{
+		redditClient:   redditClient,
+		postsList:      postsList,
+		spinner:        spinner,
+		subredditInput: subredditInput,
+	}
 }
 
 func (p *RedditTui) Focus() {
@@ -150,7 +158,7 @@ func focusListPage() tea.Msg {
 	return showPostsMsg{noFetch: true}
 }
 
-func getListItems(posts []post) []list.Item {
+func getListItems(posts []client.Post) []list.Item {
 	var items []list.Item
 	for _, p := range posts {
 		items = append(items, p)
@@ -160,7 +168,7 @@ func getListItems(posts []post) []list.Item {
 
 func (p RedditTui) loadSubredditPage(subreddit string) tea.Cmd {
 	return func() tea.Msg {
-		posts, _ := GetSubredditPosts(subreddit)
+		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
 		items := getListItems(posts)
 		return showPostsMsg{
 			items: items,
@@ -179,7 +187,7 @@ func (p *RedditTui) maximizePostsList() {
 }
 
 func (p RedditTui) loadHomePage() tea.Msg {
-	posts, _ := GetHomePosts()
+	posts, _ := p.redditClient.GetHomePosts()
 
 	items := getListItems(posts)
 	return showPostsMsg{

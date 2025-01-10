@@ -1,8 +1,8 @@
-package reddit
+package client
 
 import "fmt"
 
-type post struct {
+type Post struct {
 	title         string
 	author        string
 	subreddit     string
@@ -13,14 +13,14 @@ type post struct {
 	totalLikes    string
 }
 
-func (p post) Title() string {
+func (p Post) Title() string {
 	return p.title
 }
 
-func (p post) Description() string {
+func (p Post) Description() string {
 	return fmt.Sprintf(" %s  %s  %s comments  %s", p.totalLikes, p.subreddit, p.totalComments, p.friendlyDate)
 }
 
-func (p post) FilterValue() string {
+func (p Post) FilterValue() string {
 	return p.title
 }
