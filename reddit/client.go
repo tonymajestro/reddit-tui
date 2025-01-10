@@ -78,7 +78,7 @@ func getPosts(url string) ([]post, error) {
 	var r io.Reader
 
 	if url == homeUrl {
-		r, _ = os.Open("samples/reddit.html")
+		r, _ = os.Open("samples/home.html")
 	} else {
 		client := &http.Client{}
 		res, err := client.Get(url)
