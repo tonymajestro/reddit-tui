@@ -1,8 +1,10 @@
 package reddit
 
 import (
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 
@@ -10,7 +12,7 @@ import (
 )
 
 const (
-	homeUrl      = "https://old.reddit.com/r/all"
+	homeUrl      = "https://old.reddit.com"
 	subredditUrl = "https://old.reddit.com/r/"
 )
 
@@ -24,12 +26,12 @@ type htmlNode struct {
 }
 
 func GetHomePosts() ([]post, error) {
-    return getPosts(homeUrl)
+	return getPosts(homeUrl)
 }
 
 func GetSubredditPosts(subreddit string) ([]post, error) {
-    url := subredditUrl + subreddit
-    return getPosts(url)
+	url := subredditUrl + subreddit
+	return getPosts(url)
 }
 
 func (n htmlNode) getAttr(key string) string {
@@ -73,15 +75,22 @@ func (n htmlNode) nodeEquals(tag, class string) bool {
 }
 
 func getPosts(url string) ([]post, error) {
-	client := &http.Client{}
-	res, err := client.Get(url)
-	if err != nil {
-		return nil, err
+	var r io.Reader
+
+	if url == homeUrl {
+		r, _ = os.Open("samples/reddit.html")
+	} else {
+		client := &http.Client{}
+		res, err := client.Get(url)
+		if err != nil {
+			return nil, err
+		}
+
+		defer res.Body.Close()
+		r = res.Body
 	}
 
-	defer res.Body.Close()
-
-	doc, err := html.Parse(res.Body)
+	doc, err := html.Parse(r)
 	if err != nil {
 		log.Fatal("Could not html parse reddit home page")
 	}
