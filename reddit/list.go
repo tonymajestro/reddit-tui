@@ -17,18 +17,20 @@ type RedditTui struct {
 	spinner        RedditSpinner
 	subredditInput SubredditInput
 	focus          bool
+	w, h           int
 }
 
 func NewRedditTui() RedditTui {
 	postsList := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	postsList.Title = defaultListTitle
+	postsList.SetShowStatusBar(false)
 
 	spinner := NewRedditSpinner()
 	spinner.Focus()
 
 	subredditInput := NewSubredditInput()
 
-	return RedditTui{postsList, spinner, subredditInput, false}
+	return RedditTui{postsList, spinner, subredditInput, false, 0, 0}
 }
 
 func (p *RedditTui) Focus() {
@@ -69,6 +71,7 @@ func (p RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case showPostsMsg:
 		p.Focus()
 		p.spinner.Blur()
+		p.maximizePostsList()
 
 		if !msg.noFetch {
 			p.postsList.Title = msg.title
@@ -88,12 +91,15 @@ func (p RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, tea.Quit
 		case "s", "S":
 			p.Blur()
+			p.shrinkPostsList()
 			cmd := p.subredditInput.Focus()
 			return p, cmd
 		}
 	case tea.WindowSizeMsg:
 		h, v := listStyle.GetFrameSize()
-		p.postsList.SetSize(msg.Width-h, msg.Height-v)
+		newW, newH := msg.Width-h, msg.Height-v
+		p.w, p.h = newW, newH
+		p.postsList.SetSize(newW, newH)
 	}
 
 	if p.focus {
@@ -110,7 +116,7 @@ func (p RedditTui) View() string {
 	if p.spinner.focus {
 		return p.spinner.View()
 	} else if p.subredditInput.focus {
-		return p.subredditInput.View()
+		return lipgloss.JoinVertical(lipgloss.Left, p.subredditInput.View(), listStyle.Render(p.postsList.View()))
 	} else {
 		return listStyle.Render(p.postsList.View())
 	}
@@ -161,6 +167,15 @@ func (p RedditTui) loadSubredditPage(subreddit string) tea.Cmd {
 			title: subreddit,
 		}
 	}
+}
+
+func (p *RedditTui) shrinkPostsList() {
+	_, h := lipgloss.Size(p.subredditInput.View())
+	p.postsList.SetHeight(p.postsList.Height() - h)
+}
+
+func (p *RedditTui) maximizePostsList() {
+	p.postsList.SetSize(p.w, p.h)
 }
 
 func (p RedditTui) loadHomePage() tea.Msg {
