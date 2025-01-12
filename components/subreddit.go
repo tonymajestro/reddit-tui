@@ -1,4 +1,4 @@
-package reddit
+package components
 
 import (
 	"fmt"
@@ -7,6 +7,90 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+var (
+	inputStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	inputContainerStyle = lipgloss.NewStyle().Margin(1, 2)
+)
+
+type (
+	cancelSearchMsg struct{}
+	acceptSearchMsg string
+)
+
+func CancelSearch() tea.Msg {
+	return cancelSearchMsg{}
+}
+
+func AcceptSearch(val string) tea.Cmd {
+	return func() tea.Msg {
+		return acceptSearchMsg(val)
+	}
+}
+
+type SubredditSearch struct {
+	model textinput.Model
+	focus bool
+}
+
+func NewSubredditSearch() SubredditSearch {
+	model := textinput.New()
+	model.ShowSuggestions = true
+	model.SetSuggestions(subredditSuggestions)
+	model.CharLimit = 30
+
+	return SubredditSearch{
+		model: model,
+	}
+}
+
+func (s SubredditSearch) IsFocused() bool {
+	return s.focus
+}
+
+func (s *SubredditSearch) Focus() tea.Cmd {
+	s.focus = true
+	s.model.Reset()
+	return s.model.Focus()
+}
+
+func (s *SubredditSearch) Blur() {
+	s.focus = false
+	s.model.Blur()
+}
+
+func (s SubredditSearch) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (s SubredditSearch) Update(msg tea.Msg) (SubredditSearch, tea.Cmd) {
+	if !s.focus {
+		return s, nil
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc":
+			s.Blur()
+			return s, CancelSearch
+		case "enter":
+			s.Blur()
+			return s, AcceptSearch(s.model.Value())
+		case "ctrl+c":
+			return s, tea.Quit
+		}
+	}
+
+	var cmd tea.Cmd
+	s.model, cmd = s.model.Update(msg)
+	return s, cmd
+}
+
+func (s SubredditSearch) View() string {
+	selectionView := inputStyle.Render(fmt.Sprintf("Choose a subreddit:\n%s", s.model.View()))
+	return inputContainerStyle.Render(selectionView)
+}
 
 var subredditSuggestions = []string{
 	"15minutefood",
@@ -255,84 +339,4 @@ var subredditSuggestions = []string{
 	"worldnews",
 	"writingprompts",
 	"youshouldknow",
-}
-
-var (
-	inputStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-	inputContainerStyle = lipgloss.NewStyle().Margin(2, 4, 1, 4)
-)
-
-type (
-	selectSubredditMsg struct{}
-	hideSubredditMsg   struct{}
-)
-
-func ShowSubredditInput() tea.Cmd {
-	return func() tea.Msg {
-		return selectSubredditMsg{}
-	}
-}
-
-func HideSubredditInput() tea.Cmd {
-	return func() tea.Msg {
-		return hideSubredditMsg{}
-	}
-}
-
-type SubredditInput struct {
-	model textinput.Model
-	focus bool
-}
-
-func NewSubredditInput() SubredditInput {
-	model := textinput.New()
-	model.ShowSuggestions = true
-	model.SetSuggestions(subredditSuggestions)
-	model.CharLimit = 30
-
-	return SubredditInput{model: model}
-}
-
-func (s *SubredditInput) Focus() tea.Cmd {
-	s.focus = true
-	s.model.Reset()
-	return s.model.Focus()
-}
-
-func (s *SubredditInput) Blur() {
-	s.focus = false
-	s.model.Blur()
-}
-
-func (s SubredditInput) Init() tea.Cmd {
-	return textinput.Blink
-}
-
-func (s SubredditInput) Update(msg tea.Msg) (SubredditInput, tea.Cmd) {
-	if !s.focus {
-		return s, nil
-	}
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "esc":
-			s.Blur()
-			return s, focusListPage
-		case "ctrl+c":
-			return s, tea.Quit
-		case "enter":
-			s.Blur()
-			return s, fetchSubredditPosts(s.model.Value())
-		}
-	}
-
-	var cmd tea.Cmd
-	s.model, cmd = s.model.Update(msg)
-	return s, cmd
-}
-
-func (s SubredditInput) View() string {
-	selectionView := fmt.Sprintf("Choose a subreddit:\n%s", inputStyle.Render(s.model.View()))
-	return inputContainerStyle.Render(selectionView)
 }

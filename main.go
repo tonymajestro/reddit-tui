@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
-	"reddittui/reddit"
+	"reddittui/components"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
-	postsList := reddit.NewRedditTui()
+	reddit := components.NewRedditTui()
 
-	p := tea.NewProgram(postsList, tea.WithAltScreen())
+	p := tea.NewProgram(reddit, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)

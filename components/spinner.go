@@ -1,4 +1,4 @@
-package reddit
+package components
 
 import (
 	"fmt"
@@ -36,8 +36,16 @@ func (s *RedditSpinner) SetLoadingMessage(msg string) {
 	s.loadingMessage = msg
 }
 
-func (s *RedditSpinner) Focus() {
+func (s RedditSpinner) IsFocused() bool {
+	return s.focus
+}
+
+func (s *RedditSpinner) Focus() tea.Cmd {
 	s.focus = true
+	s.model = spinner.New()
+	s.model.Spinner = spinner.Dot
+	s.model.Style = spinnerStyle
+	return s.Init()
 }
 
 func (s *RedditSpinner) Blur() {
@@ -49,6 +57,10 @@ func (s RedditSpinner) Init() tea.Cmd {
 }
 
 func (s RedditSpinner) Update(msg tea.Msg) (RedditSpinner, tea.Cmd) {
+	if !s.IsFocused() {
+		return s, nil
+	}
+
 	var cmd tea.Cmd
 	s.model, cmd = s.model.Update(msg)
 	return s, cmd

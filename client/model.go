@@ -16,12 +16,27 @@ type Post struct {
 	totalLikes    string
 }
 
+type Posts []Post
+
 func (p Post) Title() string {
 	return fmt.Sprintf(" %s %s", p.totalLikes, p.title)
 }
 
 func (p Post) Description() string {
-	return fmt.Sprintf("%s  %s comments  submitted %s by %s", p.subreddit, p.totalComments, p.friendlyDate, p.author)
+	var sb strings.Builder
+	if strings.TrimSpace(p.subreddit) != "" {
+		sb.WriteString(p.subreddit)
+		sb.WriteString("  ")
+	}
+
+	if strings.TrimSpace(p.totalComments) == "" {
+		fmt.Fprintf(&sb, "%d comments  ", 0)
+	} else {
+		fmt.Fprintf(&sb, "%s comments  ", p.totalComments)
+	}
+
+	fmt.Fprintf(&sb, "submitted %s by %s", p.friendlyDate, p.author)
+	return sb.String()
 }
 
 func (p Post) FilterValue() string {

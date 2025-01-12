@@ -2,7 +2,6 @@ package client
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -50,7 +49,7 @@ func (r RedditClient) getPosts(url string) ([]Post, error) {
 		}
 		req.Header.Add(userAgentKey, userAgentValue)
 
-		res, err := r.client.Get(url)
+		res, err := r.client.Do(req)
 		if err != nil {
 			return nil, err
 		}
@@ -61,7 +60,7 @@ func (r RedditClient) getPosts(url string) ([]Post, error) {
 
 	doc, err := html.Parse(reader)
 	if err != nil {
-		log.Fatal("Could not html parse reddit home page")
+		return nil, err
 	}
 
 	var posts []Post
