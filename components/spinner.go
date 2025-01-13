@@ -57,10 +57,6 @@ func (s RedditSpinner) Init() tea.Cmd {
 }
 
 func (s RedditSpinner) Update(msg tea.Msg) (RedditSpinner, tea.Cmd) {
-	if !s.IsFocused() {
-		return s, nil
-	}
-
 	var cmd tea.Cmd
 	s.model, cmd = s.model.Update(msg)
 	return s, cmd

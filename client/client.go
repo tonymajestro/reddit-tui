@@ -10,6 +10,8 @@ import (
 	"golang.org/x/net/html"
 )
 
+var debug = false
+
 const (
 	homeUrl        = "https://old.reddit.com"
 	subredditUrl   = "https://old.reddit.com/r/"
@@ -37,7 +39,7 @@ func (r RedditClient) GetSubredditPosts(subreddit string) ([]Post, error) {
 	return r.getPosts(url)
 }
 
-func (r RedditClient) getPosts(url string) ([]Post, error) {
+func (r RedditClient) GetComments(url string) (Comments, error) {
 	var reader io.Reader
 
 	if url == homeUrl {
@@ -63,48 +65,117 @@ func (r RedditClient) getPosts(url string) ([]Post, error) {
 		return nil, err
 	}
 
+	var comments []Comment
+	comments = createComments(doc, comments)
+	return comments, nil
+}
+
+func (r RedditClient) getPosts(url string) ([]Post, error) {
+	var reader io.Reader
+
+	if url == homeUrl && debug {
+		reader, _ = os.Open("samples/home.html")
+	} else {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Add(userAgentKey, userAgentValue)
+
+		res, err := r.client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		defer res.Body.Close()
+		reader = res.Body
+	}
+
+	doc, err := html.Parse(reader)
+	if err != nil {
+		return nil, err
+	}
+
 	var posts []Post
-	posts = populatePosts(doc, posts)
+	posts = createPosts(doc, posts)
 	return posts, nil
 }
 
-func populatePosts(n *html.Node, posts []Post) []Post {
-	if n == nil {
-		return posts
-	}
-
+func createPosts(n *html.Node, posts []Post) []Post {
 	for c := range n.Descendants() {
-		node := htmlNode{c}
-		if node.nodeEquals("div", "thing") {
-			p := createPost(node)
-			posts = append(posts, p)
+		node := HtmlNode{c}
+		if node.NodeEquals("div", "thing") {
+			post := createPost(node)
+			posts = append(posts, post)
 		}
 	}
 
 	return posts
 }
 
-func createPost(n htmlNode) Post {
+func createPost(n HtmlNode) Post {
 	var p Post
 	for c := range n.Descendants() {
-		cNode := htmlNode{c}
+		cNode := HtmlNode{c}
 
-		if cNode.nodeEquals("a", "title") {
-			p.title = cNode.text()
-			p.postUrl = cNode.getAttr("href")
-		} else if cNode.nodeEquals("a", "author") {
-			p.author = cNode.text()
-		} else if cNode.nodeEquals("a", "subreddit") {
-			p.subreddit = cNode.text()
-		} else if cNode.nodeEquals("time", "live-timestamp") {
-			p.friendlyDate = cNode.text()
-		} else if cNode.nodeEquals("a", "comments") {
-			p.commentsUrl = cNode.getAttr("href")
-			p.totalComments = strings.Fields(cNode.text())[0]
-		} else if cNode.nodeEquals("div", "likes") {
-			p.totalLikes = cNode.text()
+		if cNode.NodeEquals("a", "title") {
+			p.PostTitle = cNode.Text()
+			p.PostUrl = cNode.GetAttr("href")
+		} else if cNode.NodeEquals("a", "author") {
+			p.Author = cNode.Text()
+		} else if cNode.NodeEquals("a", "subreddit") {
+			p.Subreddit = cNode.Text()
+		} else if cNode.NodeEquals("time", "live-timestamp") {
+			p.FriendlyDate = cNode.Text()
+		} else if cNode.NodeEquals("a", "comments") {
+			p.CommentsUrl = cNode.GetAttr("href")
+			p.TotalComments = strings.Fields(cNode.Text())[0]
+		} else if cNode.NodeEquals("div", "likes") {
+			p.TotalLikes = cNode.Text()
 		}
 	}
 
 	return p
+}
+
+func createComments(node *html.Node, comments []Comment) []Comment {
+	for c := range node.Descendants() {
+		node := HtmlNode{c}
+		if node.NodeEquals("div", "comment") {
+			comment := createComment(node)
+			comments = append(comments, comment)
+		}
+	}
+
+	return comments
+}
+
+func createComment(node HtmlNode) Comment {
+	var comment Comment
+	for c := range node.Descendants() {
+		cNode := HtmlNode{c}
+
+		if cNode.NodeEquals("a", "author") {
+			comment.author = cNode.Text()
+		} else if cNode.NodeEquals("div", "usertext-body") {
+			comment.text = getCommentText(HtmlNode(cNode))
+		} else if cNode.NodeEquals("span", "score", "likes") {
+			comment.points = cNode.Text()
+		} else if cNode.NodeEquals("time", "live-timestamp") {
+			comment.friendlyDate = cNode.Text()
+		}
+	}
+
+	return comment
+}
+
+func getCommentText(node HtmlNode) string {
+	for c := range node.Descendants() {
+		cNode := HtmlNode{c}
+		if cNode.TagEquals("p") {
+			return cNode.Text()
+		}
+	}
+
+	return ""
 }

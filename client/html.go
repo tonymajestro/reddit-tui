@@ -7,11 +7,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-type htmlNode struct {
+type HtmlNode struct {
 	*html.Node
 }
 
-func (n htmlNode) getAttr(key string) string {
+func (n HtmlNode) GetAttr(key string) string {
 	for _, attr := range n.Attr {
 		if attr.Key != key {
 			continue
@@ -23,17 +23,22 @@ func (n htmlNode) getAttr(key string) string {
 	return ""
 }
 
-func (n htmlNode) classes() []string {
-	classes := n.getAttr("class")
+func (n HtmlNode) Classes() []string {
+	classes := n.GetAttr("class")
 	return strings.Fields(classes)
 }
 
-func (n htmlNode) classContains(c string) bool {
-	classes := n.classes()
-	return slices.Contains(classes, c)
+func (n HtmlNode) ClassContains(classesToFind ...string) bool {
+	for _, c := range classesToFind {
+		if !slices.Contains(n.Classes(), c) {
+			return false
+		}
+	}
+
+	return true
 }
 
-func (n htmlNode) text() string {
+func (n HtmlNode) Text() string {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.TextNode {
 			return c.Data
@@ -43,10 +48,10 @@ func (n htmlNode) text() string {
 	return ""
 }
 
-func (n htmlNode) tagEquals(tag string) bool {
+func (n HtmlNode) TagEquals(tag string) bool {
 	return n.Type == html.ElementNode && n.Data == tag
 }
 
-func (n htmlNode) nodeEquals(tag, class string) bool {
-	return n.tagEquals(tag) && n.classContains(class)
+func (n HtmlNode) NodeEquals(tag string, classes ...string) bool {
+	return n.TagEquals(tag) && n.ClassContains(classes...)
 }

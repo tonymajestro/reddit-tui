@@ -10,20 +10,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var postsPageStyle = lipgloss.NewStyle().Margin(1, 2)
-
-type fetchPostsMsg struct {
-	subreddit string
-	home      bool
-}
+const defaultListTitle = "reddit.com"
 
 type showPostsMsg struct {
+	posts []client.Post
 	title string
 	items []list.Item
 }
 
 type PostsPage struct {
-	posts           list.Model
+	posts           []client.Post
+	itemsList       list.Model
 	spinner         RedditSpinner
 	subredditSearch SubredditSearch
 	redditClient    client.RedditClient
@@ -32,9 +29,9 @@ type PostsPage struct {
 }
 
 func NewPostsPage() PostsPage {
-	posts := list.New(nil, list.NewDefaultDelegate(), 0, 0)
-	posts.Title = defaultListTitle
-	posts.SetShowStatusBar(false)
+	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
+	items.Title = defaultListTitle
+	items.SetShowStatusBar(false)
 
 	spinner := NewRedditSpinner()
 	spinner.Focus()
@@ -44,7 +41,8 @@ func NewPostsPage() PostsPage {
 	redditClient := client.New()
 
 	return PostsPage{
-		posts:           posts,
+		posts:           []client.Post{},
+		itemsList:       items,
 		spinner:         spinner,
 		subredditSearch: subredditSearch,
 		redditClient:    redditClient,
@@ -81,9 +79,10 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 	case showPostsMsg:
 		p.HideLoading()
 		p.maximizePostsList()
-		p.posts.Title = msg.title
-		p.posts.ResetSelected()
-		return p, p.posts.SetItems(msg.items)
+		p.posts = msg.posts
+		p.itemsList.Title = msg.title
+		p.itemsList.ResetSelected()
+		return p, p.itemsList.SetItems(msg.items)
 
 	case tea.KeyMsg:
 		if p.spinner.IsFocused() || p.subredditSearch.IsFocused() {
@@ -94,24 +93,27 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 		case "s", "S":
 			p.ShowSearch()
 			return p, nil
+		case "c", "C":
+			return p, ShowComments(p.posts[p.itemsList.Index()])
 		}
 	}
 
 	p.spinner, spinnerCmd = p.spinner.Update(msg)
 	p.subredditSearch, searchCmd = p.subredditSearch.Update(msg)
-	p.posts, postsCmd = p.posts.Update(msg)
+	p.itemsList, postsCmd = p.itemsList.Update(msg)
+
 	return p, tea.Batch(spinnerCmd, searchCmd, postsCmd)
 }
 
 func (p PostsPage) View() string {
 	if p.spinner.IsFocused() {
-		return postsPageStyle.Render(p.spinner.View())
+		return appStyle.Render(p.spinner.View())
 	} else if p.subredditSearch.IsFocused() {
 		searchView := p.subredditSearch.View()
-		joinedView := lipgloss.JoinVertical(lipgloss.Left, searchView, p.posts.View())
-		return postsPageStyle.Render(joinedView)
+		joinedView := lipgloss.JoinVertical(lipgloss.Left, searchView, p.itemsList.View())
+		return appStyle.Render(joinedView)
 	} else {
-		return postsPageStyle.Render(p.posts.View())
+		return appStyle.Render(p.itemsList.View())
 	}
 }
 
@@ -130,7 +132,7 @@ func (p *PostsPage) Blur() {
 func (p *PostsPage) SetSize(w, h int) {
 	p.w = w
 	p.h = h
-	p.posts.SetSize(w, h)
+	p.itemsList.SetSize(w, h)
 }
 
 func (p *PostsPage) ShowLoading(message string) {
@@ -165,8 +167,9 @@ func (p PostsPage) LoadHome() tea.Cmd {
 			return err
 		}
 
-		items := getListItems(posts)
+		items := getPostListItems(posts)
 		return showPostsMsg{
+			posts: posts,
 			items: items,
 			title: defaultListTitle,
 		}
@@ -176,7 +179,7 @@ func (p PostsPage) LoadHome() tea.Cmd {
 func (p PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 	return func() tea.Msg {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
-		items := getListItems(posts)
+		items := getPostListItems(posts)
 		return showPostsMsg{
 			items: items,
 			title: subreddit,
@@ -186,14 +189,14 @@ func (p PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 
 func (p *PostsPage) shrinkPostsList() {
 	_, h := lipgloss.Size(p.subredditSearch.View())
-	p.posts.SetHeight(p.posts.Height() - h)
+	p.itemsList.SetHeight(p.itemsList.Height() - h)
 }
 
 func (p *PostsPage) maximizePostsList() {
-	p.posts.SetSize(p.w, p.h)
+	p.itemsList.SetSize(p.w, p.h)
 }
 
-func getListItems(posts []client.Post) []list.Item {
+func getPostListItems(posts []client.Post) []list.Item {
 	var items []list.Item
 	for _, p := range posts {
 		items = append(items, p)

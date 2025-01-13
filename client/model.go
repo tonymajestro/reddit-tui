@@ -6,41 +6,41 @@ import (
 )
 
 type Post struct {
-	title         string
-	author        string
-	subreddit     string
-	friendlyDate  string
-	postUrl       string
-	commentsUrl   string
-	totalComments string
-	totalLikes    string
+	PostTitle     string
+	Author        string
+	Subreddit     string
+	FriendlyDate  string
+	PostUrl       string
+	CommentsUrl   string
+	TotalComments string
+	TotalLikes    string
 }
 
 type Posts []Post
 
 func (p Post) Title() string {
-	return fmt.Sprintf(" %s %s", p.totalLikes, p.title)
+	return fmt.Sprintf(" %s %s", p.TotalLikes, p.PostTitle)
 }
 
 func (p Post) Description() string {
 	var sb strings.Builder
-	if strings.TrimSpace(p.subreddit) != "" {
-		sb.WriteString(p.subreddit)
+	if strings.TrimSpace(p.Subreddit) != "" {
+		sb.WriteString(p.Subreddit)
 		sb.WriteString("  ")
 	}
 
-	if strings.TrimSpace(p.totalComments) == "" {
+	if strings.TrimSpace(p.TotalComments) == "" {
 		fmt.Fprintf(&sb, "%d comments  ", 0)
 	} else {
-		fmt.Fprintf(&sb, "%s comments  ", p.totalComments)
+		fmt.Fprintf(&sb, "%s comments  ", p.TotalComments)
 	}
 
-	fmt.Fprintf(&sb, "submitted %s by %s", p.friendlyDate, p.author)
+	fmt.Fprintf(&sb, "submitted %s by %s", p.FriendlyDate, p.Author)
 	return sb.String()
 }
 
 func (p Post) FilterValue() string {
-	return p.title
+	return p.PostTitle
 }
 
 type Comment struct {
@@ -52,6 +52,8 @@ type Comment struct {
 	hidden       bool
 	depth        int
 }
+
+type Comments []Comment
 
 func (c Comment) Title() string {
 	return c.FormatDepth(fmt.Sprintf("%s  %s points  %s", c.author, c.points, c.friendlyDate))

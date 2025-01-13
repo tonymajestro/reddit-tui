@@ -1,8 +1,14 @@
 package components
 
 import (
+	"fmt"
+	"reddittui/client"
+
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
+
+var appStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type RedditTui struct {
 	postsPage    PostsPage
@@ -33,6 +39,14 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 
+	case loadCommentsMsg:
+		post := client.Post(msg)
+		r.postsPage.Blur()
+		r.commentsPage.Focus()
+
+		r.commentsPage.ShowLoading(fmt.Sprintf("loading comments for post %s...", post.PostTitle))
+		return r, r.commentsPage.LoadComments(post.PostTitle, post.CommentsUrl)
+
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "esc":
@@ -59,7 +73,9 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (r RedditTui) View() string {
 	if r.postsPage.IsFocused() {
 		return r.postsPage.View()
-	} else {
+	} else if r.commentsPage.IsFocused() {
 		return r.commentsPage.View()
 	}
+
+	return ""
 }
