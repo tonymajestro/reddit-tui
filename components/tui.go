@@ -1,12 +1,15 @@
 package components
 
 import (
-	"fmt"
-	"reddittui/client"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+type returnToPostsMsg struct{}
+
+func ReturnToPosts() tea.Msg {
+	return returnToPostsMsg{}
+}
 
 var appStyle = lipgloss.NewStyle().Margin(1, 2)
 
@@ -21,66 +24,58 @@ func NewRedditTui() RedditTui {
 
 	commentsPage := NewCommentsPage()
 
-	return RedditTui{
-		postsPage:    postsPage,
-		commentsPage: commentsPage,
-	}
+	return RedditTui{postsPage, commentsPage}
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	return tea.Batch(r.postsPage.Init(), r.postsPage.LoadHome())
+	return r.postsPage.Init()
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var (
-		postsCmd    tea.Cmd
-		commentsCmd tea.Cmd
-	)
-
 	switch msg := msg.(type) {
 
 	case returnToPostsMsg:
+		r.commentsPage.Blur()
 		r.postsPage.Focus()
-		r.postsPage.maximizePostsList()
-		r.postsPage.HideSearch()
 
 	case loadCommentsMsg:
-		post := client.Post(msg.post)
-		r.postsPage.Blur()
 		r.commentsPage.Focus()
+		r.postsPage.Blur()
 
-		r.commentsPage.ShowLoading(fmt.Sprintf("loading comments for post %s...", post.PostTitle))
-		return r, r.commentsPage.LoadComments(post.PostTitle, post.CommentsUrl)
+		cmd := r.commentsPage.LoadComments(msg.post.CommentsUrl, msg.post.PostTitle, msg.post.Subreddit)
+		return r, cmd
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
-		case "esc":
-			if !r.postsPage.subredditSearch.IsFocused() {
+		case "esc", "q":
+			if !r.commentsPage.IsFocused() && !r.postsPage.searching {
 				return r, tea.Quit
 			}
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return r, tea.Quit
 		}
 
 	case tea.WindowSizeMsg:
-		h, v := listStyle.GetFrameSize()
+		h, v := appStyle.GetFrameSize()
 		newW, newH := msg.Width-h, msg.Height-v
 		r.postsPage.SetSize(newW, newH)
 		r.commentsPage.SetSize(newW, newH)
 	}
 
-	r.postsPage, postsCmd = r.postsPage.Update(msg)
-
-	r.commentsPage, commentsCmd = r.commentsPage.Update(msg)
-	return r, tea.Batch(postsCmd, commentsCmd)
+	var cmd tea.Cmd
+	if r.postsPage.IsFocused() {
+		r.postsPage, cmd = r.postsPage.Update(msg)
+		return r, cmd
+	} else {
+		r.commentsPage, cmd = r.commentsPage.Update(msg)
+		return r, cmd
+	}
 }
 
 func (r RedditTui) View() string {
 	if r.postsPage.IsFocused() {
 		return r.postsPage.View()
-	} else if r.commentsPage.IsFocused() {
+	} else {
 		return r.commentsPage.View()
 	}
-
-	return ""
 }

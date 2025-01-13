@@ -2,107 +2,134 @@ package components
 
 import (
 	"fmt"
-	"log"
 	"reddittui/client"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 const defaultListTitle = "reddit.com"
 
+type loadHomeMsg struct{}
+
+type displayPostsMsg struct {
+	posts []client.Post
+	title string
+}
+
+var (
+	spinnerStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	searchStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	searchContainerStyle = lipgloss.NewStyle().Margin(1, 2)
+)
+
 type PostsPage struct {
-	posts           []client.Post
-	itemsList       list.Model
-	spinner         RedditSpinner
-	subredditSearch SubredditSearch
-	redditClient    client.RedditClient
-	w, h            int
-	focus           bool
+	posts          []client.Post
+	listModel      list.Model
+	spinnerModel   spinner.Model
+	searchModel    textinput.Model
+	redditClient   client.RedditClient
+	loading        bool
+	searching      bool
+	loadingMessage string
+	w, h           int
+	focus          bool
 }
 
 func NewPostsPage() PostsPage {
 	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	items.Title = defaultListTitle
-	items.SetShowStatusBar(false)
+	items.SetStatusBarItemName("post", "posts")
 
-	spinner := NewRedditSpinner()
-	spinner.Focus()
-
-	subredditSearch := NewSubredditSearch()
+	searchModel := textinput.New()
+	searchModel.ShowSuggestions = true
+	searchModel.SetSuggestions(subredditSuggestions)
+	searchModel.CharLimit = 30
 
 	redditClient := client.New()
 
 	return PostsPage{
-		posts:           []client.Post{},
-		itemsList:       items,
-		spinner:         spinner,
-		subredditSearch: subredditSearch,
-		redditClient:    redditClient,
-		focus:           false,
+		posts:        []client.Post{},
+		listModel:    items,
+		searchModel:  searchModel,
+		redditClient: redditClient,
 	}
 }
 
 func (p PostsPage) Init() tea.Cmd {
-	return p.spinner.Init()
+	return func() tea.Msg {
+		return loadHomeMsg{}
+	}
 }
 
 func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
-	var (
-		spinnerCmd tea.Cmd
-		searchCmd  tea.Cmd
-		postsCmd   tea.Cmd
-	)
-
-	if !p.focus {
-		return p, nil
-	}
-
 	switch msg := msg.(type) {
 
-	case acceptSearchMsg:
-		p.ShowLoading(fmt.Sprintf("loading r/%s...", msg.subreddit))
-		return p, tea.Batch(p.LoadSubreddit(msg.subreddit), p.spinner.Focus())
+	case loadHomeMsg:
+		return p, p.LoadHome()
 
-	case showPostsMsg:
-		p.HideLoading()
-		p.maximizePostsList()
-		p.posts = msg.posts
-		p.itemsList.Title = msg.title
-		p.itemsList.ResetSelected()
-		return p, p.itemsList.SetItems(msg.items)
+	case displayPostsMsg:
+		p.DisplayPosts(msg.posts, msg.title)
+		return p, nil
 
 	case tea.KeyMsg:
-		if p.spinner.IsFocused() || p.subredditSearch.IsFocused() {
-			break
-		}
-
 		switch keypress := msg.String(); keypress {
+		case "esc":
+			if p.searching {
+				p.HideSearch()
+				return p, nil
+			} else {
+				return p, tea.Quit
+			}
+		case "enter":
+			if p.searching {
+				p.HideSearch()
+				return p, p.LoadSubreddit(p.searchModel.Value())
+			}
+		case "ctrl+c":
+			return p, tea.Quit
 		case "s", "S":
-			p.ShowSearch()
-			return p, nil
+			if !p.searching && !p.loading {
+				return p, p.ShowSearch()
+			}
 		case "c", "C":
-			return p, ShowComments(p.posts[p.itemsList.Index()])
+			if !p.searching && !p.loading {
+				loadCommentsCmd := func() tea.Msg {
+					post := p.posts[p.listModel.Index()]
+					return loadCommentsMsg{post}
+				}
+
+				return p, loadCommentsCmd
+			}
 		}
 	}
 
-	p.spinner, spinnerCmd = p.spinner.Update(msg)
-	p.subredditSearch, searchCmd = p.subredditSearch.Update(msg)
-	p.itemsList, postsCmd = p.itemsList.Update(msg)
+	var cmd tea.Cmd
 
-	return p, tea.Batch(spinnerCmd, searchCmd, postsCmd)
+	if p.loading {
+		p.spinnerModel, cmd = p.spinnerModel.Update(msg)
+		return p, cmd
+	} else if p.searching {
+		p.searchModel, cmd = p.searchModel.Update(msg)
+		return p, cmd
+	} else {
+		p.listModel, cmd = p.listModel.Update(msg)
+		return p, cmd
+	}
 }
 
 func (p PostsPage) View() string {
-	if p.spinner.IsFocused() {
-		return appStyle.Render(p.spinner.View())
-	} else if p.subredditSearch.IsFocused() {
-		searchView := p.subredditSearch.View()
-		joinedView := lipgloss.JoinVertical(lipgloss.Left, searchView, p.itemsList.View())
+	if p.loading {
+		return appStyle.Render(p.GetSpinnerView())
+	} else if p.searching {
+		searchView := p.GetSearchView()
+		joinedView := lipgloss.JoinVertical(lipgloss.Left, searchView, p.listModel.View())
 		return appStyle.Render(joinedView)
 	} else {
-		return appStyle.Render(p.itemsList.View())
+		return appStyle.Render(p.listModel.View())
 	}
 }
 
@@ -121,69 +148,85 @@ func (p *PostsPage) Blur() {
 func (p *PostsPage) SetSize(w, h int) {
 	p.w = w
 	p.h = h
-	p.itemsList.SetSize(w, h)
+	p.listModel.SetSize(w, h)
 }
 
 func (p *PostsPage) ShowLoading(message string) {
-	p.spinner.SetLoadingMessage(message)
-	p.spinner.Focus()
+	spinnerModel := spinner.New()
+	spinnerModel.Spinner = spinner.Dot
+	spinnerModel.Style = spinnerStyle
+
+	p.spinnerModel = spinnerModel
+	p.loadingMessage = message
+	p.loading = true
 }
 
 func (p *PostsPage) HideLoading() {
-	p.spinner.Blur()
+	p.loading = false
 }
 
-func (p *PostsPage) ShowSearch() {
+func (p *PostsPage) ShowSearch() tea.Cmd {
 	p.shrinkPostsList()
-	p.subredditSearch.Focus()
+	p.searching = true
+	p.searchModel.Reset()
+	return p.searchModel.Focus()
 }
 
 func (p *PostsPage) HideSearch() {
-	p.subredditSearch.Blur()
+	p.maximizePostsList()
+	p.searching = false
+	p.searchModel.Blur()
 }
 
-func (p *PostsPage) ShowPosts() {
-	p.Focus()
-	p.spinner.Blur()
-	p.subredditSearch.Blur()
+func (p PostsPage) GetSpinnerView() string {
+	return fmt.Sprintf("%s %s", p.spinnerModel.View(), p.loadingMessage)
 }
 
-func (p PostsPage) LoadHome() tea.Cmd {
-	return func() tea.Msg {
-		posts, err := p.redditClient.GetHomePosts()
-		if err != nil {
-			log.Printf("Error: %v", err)
-			return err
-		}
+func (p PostsPage) GetSearchView() string {
+	selectionView := searchStyle.Render(fmt.Sprintf("Choose a subreddit:\n%s", p.searchModel.View()))
+	return searchContainerStyle.Render(selectionView)
+}
 
-		items := getPostListItems(posts)
-		return showPostsMsg{
-			posts: posts,
-			items: items,
-			title: defaultListTitle,
-		}
+func (p *PostsPage) LoadHome() tea.Cmd {
+	p.ShowLoading("loading reddit.com...")
+
+	getPostsCmd := func() tea.Msg {
+		posts, _ := p.redditClient.GetHomePosts()
+		return displayPostsMsg{posts: posts, title: defaultListTitle}
 	}
+
+	return tea.Batch(getPostsCmd, p.spinnerModel.Tick)
 }
 
-func (p PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
-	return func() tea.Msg {
+func (p *PostsPage) DisplayPosts(posts []client.Post, title string) {
+	p.HideLoading()
+	p.maximizePostsList()
+
+	p.listModel.Title = title
+
+	p.posts = posts
+	p.listModel.ResetSelected()
+	p.listModel.SetItems(getPostListItems(posts))
+}
+
+func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
+	p.ShowLoading(fmt.Sprintf("loading r/%s...", subreddit))
+
+	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
-		items := getPostListItems(posts)
-		return showPostsMsg{
-			posts: posts,
-			items: items,
-			title: subreddit,
-		}
+		return displayPostsMsg{posts: posts, title: subreddit}
 	}
+
+	return tea.Batch(getPostsCmd, p.spinnerModel.Tick)
 }
 
 func (p *PostsPage) shrinkPostsList() {
-	_, h := lipgloss.Size(p.subredditSearch.View())
-	p.itemsList.SetHeight(p.itemsList.Height() - h)
+	_, h := lipgloss.Size(p.GetSearchView())
+	p.listModel.SetHeight(p.listModel.Height() - h)
 }
 
 func (p *PostsPage) maximizePostsList() {
-	p.itemsList.SetSize(p.w, p.h)
+	p.listModel.SetSize(p.w, p.h)
 }
 
 func getPostListItems(posts []client.Post) []list.Item {

@@ -1,38 +1,46 @@
 package components
 
 import (
+	"fmt"
 	"log"
 	"reddittui/client"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var listStyle = lipgloss.NewStyle().Margin(1, 2)
+type loadCommentsMsg struct {
+	post client.Post
+}
+
+type showCommentsMsg struct {
+	comments  []client.Comment
+	title     string
+	subreddit string
+}
 
 type CommentsPage struct {
-	comments     []client.Comment
-	itemsList    list.Model
-	spinner      RedditSpinner
-	redditClient client.RedditClient
-	focus        bool
-	w, h         int
+	comments       []client.Comment
+	listModel      list.Model
+	spinnerModel   spinner.Model
+	redditClient   client.RedditClient
+	loading        bool
+	searching      bool
+	loadingMessage string
+	w, h           int
+	focus          bool
 }
 
 func NewCommentsPage() CommentsPage {
-	comments := list.New(nil, list.NewDefaultDelegate(), 0, 0)
-	comments.Title = ""
-	comments.SetShowStatusBar(true)
-
-	spinner := NewRedditSpinner()
-	spinner.Focus()
+	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
+	items.SetStatusBarItemName("comment", "comments")
 
 	redditClient := client.New()
 
 	return CommentsPage{
-		itemsList:    comments,
-		spinner:      spinner,
+		comments:     []client.Comment{},
+		listModel:    items,
 		redditClient: redditClient,
 	}
 }
@@ -40,7 +48,7 @@ func NewCommentsPage() CommentsPage {
 func (c *CommentsPage) SetSize(w, h int) {
 	c.w = w
 	c.h = h
-	c.itemsList.SetSize(w, h)
+	c.listModel.SetSize(w, h)
 }
 
 func (c CommentsPage) IsFocused() bool {
@@ -56,26 +64,15 @@ func (c *CommentsPage) Blur() {
 }
 
 func (c CommentsPage) Init() tea.Cmd {
-	return c.spinner.Init()
+	return c.spinnerModel.Tick
 }
 
 func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
-	var (
-		spinnerCmd  tea.Cmd
-		commentsCmd tea.Cmd
-	)
-
-	if !c.focus {
-		return c, nil
-	}
-
 	switch msg := msg.(type) {
 
 	case showCommentsMsg:
-		c.HideLoading()
-		c.itemsList.Title = msg.title
-		c.itemsList.ResetSelected()
-		return c, c.itemsList.SetItems(msg.items)
+		cmd := c.DisplayComments(msg.comments, msg.title, msg.subreddit)
+		return c, cmd
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
@@ -84,48 +81,70 @@ func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
 		}
 	}
 
-	c.spinner, spinnerCmd = c.spinner.Update(msg)
-	c.itemsList, commentsCmd = c.itemsList.Update(msg)
+	var cmd tea.Cmd
 
-	return c, tea.Batch(spinnerCmd, commentsCmd)
+	if c.loading {
+		c.spinnerModel, cmd = c.spinnerModel.Update(msg)
+		return c, cmd
+	} else {
+		c.listModel, cmd = c.listModel.Update(msg)
+		return c, cmd
+	}
 }
 
 func (c CommentsPage) View() string {
-	if c.spinner.IsFocused() {
-		return appStyle.Render(c.spinner.View())
+	if c.loading {
+		return appStyle.Render(c.GetSpinnerView())
 	} else {
-		return appStyle.Render(c.itemsList.View())
+		return appStyle.Render(c.listModel.View())
 	}
 }
 
 func (c *CommentsPage) ShowLoading(message string) {
-	c.spinner.SetLoadingMessage(message)
-	c.spinner.Focus()
+	spinnerModel := spinner.New()
+	spinnerModel.Spinner = spinner.Dot
+	spinnerModel.Style = spinnerStyle
+
+	c.spinnerModel = spinnerModel
+	c.loadingMessage = message
+	c.loading = true
 }
 
 func (c *CommentsPage) HideLoading() {
-	c.spinner.Blur()
+	c.loading = false
 }
 
-func (c *CommentsPage) ShowComments() {
-	c.Focus()
-	c.spinner.Blur()
+func (c CommentsPage) GetSpinnerView() string {
+	return fmt.Sprintf("%s %s", c.spinnerModel.View(), c.loadingMessage)
 }
 
-func (c CommentsPage) LoadComments(title, url string) tea.Cmd {
-	return func() tea.Msg {
+func (c *CommentsPage) LoadComments(url, title, subreddit string) tea.Cmd {
+	c.ShowLoading(fmt.Sprintf("loading comments for \"%s\"...", title))
+
+	loadCommentsCmd := func() tea.Msg {
 		comments, err := c.redditClient.GetComments(url)
 		if err != nil {
-			log.Printf("Error: %v", err)
-			return err
+			log.Fatalf("Error: %v", err)
 		}
 
-		items := getCommentListItems(comments)
 		return showCommentsMsg{
-			items: items,
-			title: title,
+			comments:  comments,
+			title:     title,
+			subreddit: subreddit,
 		}
 	}
+
+	return tea.Batch(loadCommentsCmd, c.spinnerModel.Tick)
+}
+
+func (c *CommentsPage) DisplayComments(comments []client.Comment, title, subreddit string) tea.Cmd {
+	c.HideLoading()
+
+	c.listModel.Title = fmt.Sprintf("%s  |  %s", subreddit, title)
+
+	c.comments = comments
+	c.listModel.ResetSelected()
+	return c.listModel.SetItems(getCommentListItems(comments))
 }
 
 func getCommentListItems(comments client.Comments) []list.Item {

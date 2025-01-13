@@ -39,28 +39,21 @@ func (r RedditClient) GetSubredditPosts(subreddit string) ([]Post, error) {
 	return r.getPosts(url)
 }
 
-func (r RedditClient) GetComments(url string) (Comments, error) {
-	var reader io.Reader
+func (r RedditClient) GetComments(url string) ([]Comment, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add(userAgentKey, userAgentValue)
 
-	if url == homeUrl {
-		reader, _ = os.Open("samples/home.html")
-	} else {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Add(userAgentKey, userAgentValue)
-
-		res, err := r.client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-
-		defer res.Body.Close()
-		reader = res.Body
+	res, err := r.client.Do(req)
+	if err != nil {
+		return nil, err
 	}
 
-	doc, err := html.Parse(reader)
+	defer res.Body.Close()
+
+	doc, err := html.Parse(res.Body)
 	if err != nil {
 		return nil, err
 	}

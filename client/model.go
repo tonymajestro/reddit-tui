@@ -56,11 +56,11 @@ type Comment struct {
 type Comments []Comment
 
 func (c Comment) Title() string {
-	return c.FormatDepth(fmt.Sprintf("%s  %s points  %s", c.author, c.points, c.friendlyDate))
+	return c.text
 }
 
 func (c Comment) Description() string {
-	return c.FormatDepth(c.text)
+	return fmt.Sprintf("%s points | by %s %s", c.points, c.author, c.friendlyDate)
 }
 
 func (c Comment) FilterValue() string {
