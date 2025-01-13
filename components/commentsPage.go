@@ -83,11 +83,18 @@ func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+
 	case showCommentsMsg:
 		c.HideLoading()
 		c.itemsList.Title = msg.title
 		c.itemsList.ResetSelected()
 		return c, c.itemsList.SetItems(msg.items)
+
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "backspace":
+			return c, ReturnToPosts
+		}
 	}
 
 	c.spinner, spinnerCmd = c.spinner.Update(msg)

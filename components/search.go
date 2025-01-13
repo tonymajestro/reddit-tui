@@ -13,14 +13,7 @@ var (
 	inputContainerStyle = lipgloss.NewStyle().Margin(1, 2)
 )
 
-type (
-	cancelSearchMsg struct{}
-	acceptSearchMsg string
-)
-
-func CancelSearch() tea.Msg {
-	return cancelSearchMsg{}
-}
+type acceptSearchMsg string
 
 func AcceptSearch(val string) tea.Cmd {
 	return func() tea.Msg {
@@ -73,7 +66,7 @@ func (s SubredditSearch) Update(msg tea.Msg) (SubredditSearch, tea.Cmd) {
 		switch msg.String() {
 		case "esc":
 			s.Blur()
-			return s, CancelSearch
+			return s, ReturnToPosts
 		case "enter":
 			s.Blur()
 			return s, AcceptSearch(s.model.Value())

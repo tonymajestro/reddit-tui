@@ -39,6 +39,11 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 
+	case returnToPostsMsg:
+		r.postsPage.Focus()
+		r.postsPage.maximizePostsList()
+		r.postsPage.HideSearch()
+
 	case loadCommentsMsg:
 		post := client.Post(msg)
 		r.postsPage.Blur()

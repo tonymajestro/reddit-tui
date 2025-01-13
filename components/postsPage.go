@@ -12,6 +12,12 @@ import (
 
 const defaultListTitle = "reddit.com"
 
+type returnToPostsMsg struct{}
+
+func ReturnToPosts() tea.Msg {
+	return returnToPostsMsg{}
+}
+
 type showPostsMsg struct {
 	posts []client.Post
 	title string
@@ -66,10 +72,6 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
-
-	case cancelSearchMsg:
-		p.maximizePostsList()
-		p.HideSearch()
 
 	case acceptSearchMsg:
 		subreddit := string(msg)
@@ -181,6 +183,7 @@ func (p PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
 		items := getPostListItems(posts)
 		return showPostsMsg{
+			posts: posts,
 			items: items,
 			title: subreddit,
 		}
