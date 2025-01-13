@@ -13,14 +13,6 @@ var (
 	inputContainerStyle = lipgloss.NewStyle().Margin(1, 2)
 )
 
-type acceptSearchMsg string
-
-func AcceptSearch(val string) tea.Cmd {
-	return func() tea.Msg {
-		return acceptSearchMsg(val)
-	}
-}
-
 type SubredditSearch struct {
 	model textinput.Model
 	focus bool

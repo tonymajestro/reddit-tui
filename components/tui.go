@@ -45,7 +45,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.postsPage.HideSearch()
 
 	case loadCommentsMsg:
-		post := client.Post(msg)
+		post := client.Post(msg.post)
 		r.postsPage.Blur()
 		r.commentsPage.Focus()
 

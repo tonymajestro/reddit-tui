@@ -9,19 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type loadCommentsMsg client.Post
-
-type showCommentsMsg struct {
-	title string
-	items []list.Item
-}
-
-func ShowComments(post client.Post) tea.Cmd {
-	return func() tea.Msg {
-		return loadCommentsMsg(post)
-	}
-}
-
 var listStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type CommentsPage struct {

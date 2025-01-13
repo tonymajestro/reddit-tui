@@ -12,18 +12,6 @@ import (
 
 const defaultListTitle = "reddit.com"
 
-type returnToPostsMsg struct{}
-
-func ReturnToPosts() tea.Msg {
-	return returnToPostsMsg{}
-}
-
-type showPostsMsg struct {
-	posts []client.Post
-	title string
-	items []list.Item
-}
-
 type PostsPage struct {
 	posts           []client.Post
 	itemsList       list.Model
@@ -74,9 +62,8 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case acceptSearchMsg:
-		subreddit := string(msg)
-		p.ShowLoading(fmt.Sprintf("loading r/%s...", subreddit))
-		return p, tea.Batch(p.LoadSubreddit(subreddit), p.spinner.Focus())
+		p.ShowLoading(fmt.Sprintf("loading r/%s...", msg.subreddit))
+		return p, tea.Batch(p.LoadSubreddit(msg.subreddit), p.spinner.Focus())
 
 	case showPostsMsg:
 		p.HideLoading()
