@@ -1,6 +1,7 @@
 package client
 
 import (
+	"iter"
 	"slices"
 	"strings"
 
@@ -24,13 +25,19 @@ func (n HtmlNode) GetAttr(key string) string {
 }
 
 func (n HtmlNode) Classes() []string {
-	classes := n.GetAttr("class")
-	return strings.Fields(classes)
+	var classes []string
+
+	class := n.GetAttr("class")
+	for _, c := range strings.Fields(class) {
+		classes = append(classes, strings.TrimSpace(c))
+	}
+
+	return classes
 }
 
 func (n HtmlNode) ClassContains(classesToFind ...string) bool {
 	for _, c := range classesToFind {
-		if !slices.Contains(n.Classes(), c) {
+		if !slices.Contains(n.Classes(), strings.TrimSpace(c)) {
 			return false
 		}
 	}
@@ -54,4 +61,70 @@ func (n HtmlNode) TagEquals(tag string) bool {
 
 func (n HtmlNode) NodeEquals(tag string, classes ...string) bool {
 	return n.TagEquals(tag) && n.ClassContains(classes...)
+}
+
+func (n HtmlNode) FindDescendant(tag string, classes ...string) (HtmlNode, bool) {
+	var descendant HtmlNode
+
+	for c := range n.Descendants() {
+		descendant = HtmlNode{c}
+		if len(classes) == 0 && descendant.TagEquals(tag) {
+			return descendant, true
+		} else if descendant.NodeEquals(tag, classes...) {
+			return descendant, true
+		}
+	}
+
+	return descendant, false
+}
+
+func (n HtmlNode) FindDescendants(tag string, classes ...string) iter.Seq[HtmlNode] {
+	return func(yield func(HtmlNode) bool) {
+		for c := range n.Descendants() {
+			childNode := HtmlNode{c}
+
+			if len(classes) == 0 && childNode.TagEquals(tag) {
+				if !yield(childNode) {
+					return
+				}
+			} else if childNode.NodeEquals(tag, classes...) {
+				if !yield(childNode) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (n HtmlNode) FindChild(tag string, classes ...string) (HtmlNode, bool) {
+	var child HtmlNode
+
+	for c := range n.ChildNodes() {
+		child = HtmlNode{c}
+		if len(classes) == 0 && child.TagEquals(tag) {
+			return child, true
+		} else if child.NodeEquals(tag, classes...) {
+			return child, true
+		}
+	}
+
+	return child, false
+}
+
+func (n HtmlNode) FindChildren(tag string, classes ...string) iter.Seq[HtmlNode] {
+	return func(yield func(HtmlNode) bool) {
+		for c := range n.ChildNodes() {
+			childNode := HtmlNode{c}
+
+			if len(classes) == 0 && childNode.TagEquals(tag) {
+				if !yield(childNode) {
+					return
+				}
+			} else if childNode.NodeEquals(tag, classes...) {
+				if !yield(childNode) {
+					return
+				}
+			}
+		}
+	}
 }

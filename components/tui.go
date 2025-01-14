@@ -42,7 +42,12 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.commentsPage.Focus()
 		r.postsPage.Blur()
 
-		cmd := r.commentsPage.LoadComments(msg.post.CommentsUrl, msg.post.PostTitle, msg.post.Subreddit)
+		subreddit := msg.post.Subreddit
+		if len(subreddit) == 0 {
+			subreddit = msg.subreddit
+		}
+
+		cmd := r.commentsPage.LoadComments(msg.post.CommentsUrl, msg.post.PostTitle, subreddit)
 		return r, cmd
 
 	case tea.KeyMsg:

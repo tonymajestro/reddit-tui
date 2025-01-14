@@ -59,7 +59,7 @@ func (r RedditClient) GetComments(url string) ([]Comment, error) {
 	}
 
 	var comments []Comment
-	comments = createComments(doc, comments)
+	comments = createComments(HtmlNode{doc}, comments)
 	return comments, nil
 }
 
@@ -90,17 +90,14 @@ func (r RedditClient) getPosts(url string) ([]Post, error) {
 	}
 
 	var posts []Post
-	posts = createPosts(doc, posts)
+	posts = createPosts(HtmlNode{doc}, posts)
 	return posts, nil
 }
 
-func createPosts(n *html.Node, posts []Post) []Post {
-	for c := range n.Descendants() {
-		node := HtmlNode{c}
-		if node.NodeEquals("div", "thing") {
-			post := createPost(node)
-			posts = append(posts, post)
-		}
+func createPosts(root HtmlNode, posts []Post) []Post {
+	for d := range root.FindDescendants("div", "thing") {
+		post := createPost(d)
+		posts = append(posts, post)
 	}
 
 	return posts
@@ -131,15 +128,52 @@ func createPost(n HtmlNode) Post {
 	return p
 }
 
-func createComments(node *html.Node, comments []Comment) []Comment {
-	for c := range node.Descendants() {
-		node := HtmlNode{c}
-		if node.NodeEquals("div", "comment") {
-			comment := createComment(node)
-			comments = append(comments, comment)
+func createComments(root HtmlNode, comments []Comment) []Comment {
+	file, _ := os.Create("debug.log")
+	defer file.Close()
+
+	commentsRootNode, ok := root.FindDescendant("div", "sitetable", "nestedlisting")
+	if !ok {
+		return comments
+	}
+
+	for c := range commentsRootNode.FindChildren("div", "thing", "comment") {
+		if n, ok := c.FindChild("div", "entry", "unvoted"); ok {
+			comments = parseRootCommentNode(n, comments)
 		}
 	}
 
+	return comments
+}
+
+func parseRootCommentNode(node HtmlNode, comments []Comment) []Comment {
+	var comment Comment
+
+	if taglineNode, ok := node.FindChild("p", "tagline"); ok {
+		if authorNode, ok := taglineNode.FindChild("a", "author"); ok {
+			comment.Author = authorNode.Text()
+		}
+
+		if likesNode, ok := taglineNode.FindChild("span", "score", "likes"); ok {
+			comment.Points = likesNode.Text()
+		}
+
+		if timestampNode, ok := taglineNode.FindChild("time", "live-timestamp"); ok {
+			comment.Timestamp = timestampNode.Text()
+		}
+	}
+
+	if usertextNode, ok := node.FindChild("form", "usertext"); ok {
+		var usertext strings.Builder
+		for n := range usertextNode.FindDescendants("p") {
+			usertext.WriteString(n.Text())
+			usertext.WriteRune(' ')
+		}
+
+		comment.Text = usertext.String()
+	}
+
+	comments = append(comments, comment)
 	return comments
 }
 
@@ -149,13 +183,13 @@ func createComment(node HtmlNode) Comment {
 		cNode := HtmlNode{c}
 
 		if cNode.NodeEquals("a", "author") {
-			comment.author = cNode.Text()
+			comment.Author = cNode.Text()
 		} else if cNode.NodeEquals("div", "usertext-body") {
-			comment.text = getCommentText(HtmlNode(cNode))
+			comment.Text = getCommentText(cNode)
 		} else if cNode.NodeEquals("span", "score", "likes") {
-			comment.points = cNode.Text()
+			comment.Points = cNode.Text()
 		} else if cNode.NodeEquals("time", "live-timestamp") {
-			comment.friendlyDate = cNode.Text()
+			comment.Timestamp = cNode.Text()
 		}
 	}
 
@@ -163,12 +197,9 @@ func createComment(node HtmlNode) Comment {
 }
 
 func getCommentText(node HtmlNode) string {
-	for c := range node.Descendants() {
-		cNode := HtmlNode{c}
-		if cNode.TagEquals("p") {
-			return cNode.Text()
-		}
+	if c, ok := node.FindDescendant("p"); ok {
+		return c.Text()
+	} else {
+		return ""
 	}
-
-	return ""
 }

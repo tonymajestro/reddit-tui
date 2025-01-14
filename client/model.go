@@ -18,6 +18,18 @@ type Post struct {
 
 type Posts []Post
 
+type Comment struct {
+	Author    string
+	Text      string
+	Points    string
+	Timestamp string
+	Children  []*Comment
+	Hidden    bool
+	Depth     int
+}
+
+type Comments []Comment
+
 func (p Post) Title() string {
 	return fmt.Sprintf(" %s %s", p.TotalLikes, p.PostTitle)
 }
@@ -43,33 +55,21 @@ func (p Post) FilterValue() string {
 	return p.PostTitle
 }
 
-type Comment struct {
-	author       string
-	text         string
-	points       string
-	friendlyDate string
-	children     []*Comment
-	hidden       bool
-	depth        int
-}
-
-type Comments []Comment
-
 func (c Comment) Title() string {
-	return c.text
+	return c.Text
 }
 
 func (c Comment) Description() string {
-	return fmt.Sprintf("%s points | by %s %s", c.points, c.author, c.friendlyDate)
+	return fmt.Sprintf("%s  by %s  %s", c.Points, c.Author, c.Timestamp)
 }
 
 func (c Comment) FilterValue() string {
-	return c.author
+	return c.Author
 }
 
 func (c Comment) FormatDepth(s string) string {
 	var sb strings.Builder
-	for range c.depth {
+	for range c.Depth {
 		sb.WriteString("  ")
 	}
 	sb.WriteString(s)

@@ -11,7 +11,8 @@ import (
 )
 
 type loadCommentsMsg struct {
-	post client.Post
+	post      client.Post
+	subreddit string
 }
 
 type showCommentsMsg struct {

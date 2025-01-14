@@ -16,8 +16,9 @@ const defaultListTitle = "reddit.com"
 type loadHomeMsg struct{}
 
 type displayPostsMsg struct {
-	posts []client.Post
-	title string
+	posts     []client.Post
+	title     string
+	subreddit string
 }
 
 var (
@@ -35,6 +36,7 @@ type PostsPage struct {
 	loading        bool
 	searching      bool
 	loadingMessage string
+	subreddit      string
 	w, h           int
 	focus          bool
 }
@@ -72,7 +74,7 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 		return p, p.LoadHome()
 
 	case displayPostsMsg:
-		p.DisplayPosts(msg.posts, msg.title)
+		p.DisplayPosts(msg.posts, msg.title, msg.subreddit)
 		return p, nil
 
 	case tea.KeyMsg:
@@ -99,7 +101,7 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 			if !p.searching && !p.loading {
 				loadCommentsCmd := func() tea.Msg {
 					post := p.posts[p.listModel.Index()]
-					return loadCommentsMsg{post}
+					return loadCommentsMsg{post, p.subreddit}
 				}
 
 				return p, loadCommentsCmd
@@ -192,17 +194,22 @@ func (p *PostsPage) LoadHome() tea.Cmd {
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetHomePosts()
-		return displayPostsMsg{posts: posts, title: defaultListTitle}
+		return displayPostsMsg{
+			posts:     posts,
+			title:     defaultListTitle,
+			subreddit: defaultListTitle,
+		}
 	}
 
 	return tea.Batch(getPostsCmd, p.spinnerModel.Tick)
 }
 
-func (p *PostsPage) DisplayPosts(posts []client.Post, title string) {
+func (p *PostsPage) DisplayPosts(posts []client.Post, title, subreddit string) {
 	p.HideLoading()
 	p.maximizePostsList()
 
 	p.listModel.Title = title
+	p.subreddit = subreddit
 
 	p.posts = posts
 	p.listModel.ResetSelected()
@@ -214,7 +221,11 @@ func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
-		return displayPostsMsg{posts: posts, title: subreddit}
+		return displayPostsMsg{
+			posts:     posts,
+			title:     subreddit,
+			subreddit: subreddit,
+		}
 	}
 
 	return tea.Batch(getPostsCmd, p.spinnerModel.Tick)
