@@ -90,21 +90,19 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 			if p.searching {
 				p.HideSearch()
 				return p, p.LoadSubreddit(p.searchModel.Value())
-			}
-		case "ctrl+c":
-			return p, tea.Quit
-		case "s", "S":
-			if !p.searching && !p.loading {
-				return p, p.ShowSearch()
-			}
-		case "c", "C":
-			if !p.searching && !p.loading {
+			} else if !p.loading {
 				loadCommentsCmd := func() tea.Msg {
 					post := p.posts[p.listModel.Index()]
 					return loadCommentsMsg{post, p.subreddit}
 				}
 
 				return p, loadCommentsCmd
+			}
+		case "ctrl+c":
+			return p, tea.Quit
+		case "s", "S":
+			if !p.searching && !p.loading {
+				return p, p.ShowSearch()
 			}
 		}
 	}
@@ -223,7 +221,7 @@ func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
 		return displayPostsMsg{
 			posts:     posts,
-			title:     subreddit,
+			title:     fmt.Sprintf("r/%s", subreddit),
 			subreddit: subreddit,
 		}
 	}

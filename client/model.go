@@ -56,20 +56,21 @@ func (p Post) FilterValue() string {
 }
 
 func (c Comment) Title() string {
-	return c.Text
+	return formatDepth(c.Text, c.Depth)
 }
 
 func (c Comment) Description() string {
-	return fmt.Sprintf("%s  by %s  %s", c.Points, c.Author, c.Timestamp)
+	desc := fmt.Sprintf("%s  by %s  %s", c.Points, c.Author, c.Timestamp)
+	return formatDepth(desc, c.Depth)
 }
 
 func (c Comment) FilterValue() string {
 	return c.Author
 }
 
-func (c Comment) FormatDepth(s string) string {
+func formatDepth(s string, depth int) string {
 	var sb strings.Builder
-	for range c.Depth {
+	for range depth {
 		sb.WriteString("  ")
 	}
 	sb.WriteString(s)

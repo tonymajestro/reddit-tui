@@ -35,6 +35,10 @@ func (n HtmlNode) Classes() []string {
 	return classes
 }
 
+func (n HtmlNode) Class() string {
+	return n.GetAttr("class")
+}
+
 func (n HtmlNode) ClassContains(classesToFind ...string) bool {
 	for _, c := range classesToFind {
 		if !slices.Contains(n.Classes(), strings.TrimSpace(c)) {

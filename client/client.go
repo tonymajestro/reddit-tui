@@ -59,7 +59,7 @@ func (r RedditClient) GetComments(url string) ([]Comment, error) {
 	}
 
 	var comments []Comment
-	comments = createComments(HtmlNode{doc}, comments)
+	comments = createComments(HtmlNode{doc}, 0, comments)
 	return comments, nil
 }
 
@@ -128,26 +128,38 @@ func createPost(n HtmlNode) Post {
 	return p
 }
 
-func createComments(root HtmlNode, comments []Comment) []Comment {
-	file, _ := os.Create("debug.log")
-	defer file.Close()
+func createComments(root HtmlNode, depth int, comments []Comment) []Comment {
+	var commentsNode HtmlNode
 
-	commentsRootNode, ok := root.FindDescendant("div", "sitetable", "nestedlisting")
+	// Comments node are found under class "sitetable listing" or "sitetable nestedlisting"
+	commentsNode, ok := root.FindDescendant("div", "sitetable", "nestedlisting")
 	if !ok {
-		return comments
+		commentsNode, ok = root.FindDescendant("div", "sitetable", "listing")
+		if !ok {
+			return comments
+		}
 	}
 
-	for c := range commentsRootNode.FindChildren("div", "thing", "comment") {
-		if n, ok := c.FindChild("div", "entry", "unvoted"); ok {
-			comments = parseRootCommentNode(n, comments)
+	for c := range commentsNode.FindChildren("div", "thing", "comment") {
+		entryNode, ok := c.FindChild("div", "entry", "unvoted")
+		if !ok {
+			continue
+		}
+
+		comments = parseCommentNode(entryNode, depth, comments)
+
+		// Find child comments
+		if n, ok := c.FindChild("div", "child"); ok {
+			comments = createComments(n, depth+1, comments)
 		}
 	}
 
 	return comments
 }
 
-func parseRootCommentNode(node HtmlNode, comments []Comment) []Comment {
+func parseCommentNode(node HtmlNode, depth int, comments []Comment) []Comment {
 	var comment Comment
+	comment.Depth = depth
 
 	if taglineNode, ok := node.FindChild("p", "tagline"); ok {
 		if authorNode, ok := taglineNode.FindChild("a", "author"); ok {
