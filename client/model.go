@@ -16,7 +16,13 @@ type Post struct {
 	TotalLikes    string
 }
 
-type Posts []Post
+type Posts struct {
+	Title       string
+	Description string
+	Subreddit   string
+	IsHome      bool
+	Posts       []Post
+}
 
 type Comment struct {
 	Author    string
@@ -31,7 +37,7 @@ type Comment struct {
 type Comments []Comment
 
 func (p Post) Title() string {
-	return fmt.Sprintf(" %s %s", p.TotalLikes, p.PostTitle)
+	return fmt.Sprintf(" %s  %s", p.TotalLikes, p.PostTitle)
 }
 
 func (p Post) Description() string {

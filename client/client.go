@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ var debug = false
 const (
 	homeUrl        = "https://old.reddit.com"
 	subredditUrl   = "https://old.reddit.com/r/"
+	defaultTitle   = "reddit.com"
 	userAgentKey   = "User-Agent"
 	userAgentValue = "Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0"
 )
@@ -30,13 +32,23 @@ func New() RedditClient {
 	return RedditClient{client}
 }
 
-func (r RedditClient) GetHomePosts() ([]Post, error) {
-	return r.getPosts(homeUrl)
+func (r RedditClient) GetHomePosts() (Posts, error) {
+	posts, err := r.getPosts(homeUrl)
+	posts.Title = defaultTitle
+	posts.IsHome = true
+
+	return posts, err
 }
 
-func (r RedditClient) GetSubredditPosts(subreddit string) ([]Post, error) {
+func (r RedditClient) GetSubredditPosts(subreddit string) (Posts, error) {
 	url := subredditUrl + subreddit
-	return r.getPosts(url)
+	posts, err := r.getPosts(url)
+
+	posts.Title = fmt.Sprintf("r/%s", subreddit)
+	posts.Subreddit = subreddit
+	posts.IsHome = false
+
+	return posts, err
 }
 
 func (r RedditClient) GetComments(url string) ([]Comment, error) {
@@ -63,21 +75,25 @@ func (r RedditClient) GetComments(url string) ([]Comment, error) {
 	return comments, nil
 }
 
-func (r RedditClient) getPosts(url string) ([]Post, error) {
-	var reader io.Reader
+func (r RedditClient) getPosts(url string) (Posts, error) {
+	var (
+		reader io.Reader
+		posts  Posts
+	)
 
 	if url == homeUrl && debug {
 		reader, _ = os.Open("samples/home.html")
 	} else {
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			return nil, err
+			return posts, err
 		}
+
 		req.Header.Add(userAgentKey, userAgentValue)
 
 		res, err := r.client.Do(req)
 		if err != nil {
-			return nil, err
+			return posts, err
 		}
 
 		defer res.Body.Close()
@@ -86,21 +102,33 @@ func (r RedditClient) getPosts(url string) ([]Post, error) {
 
 	doc, err := html.Parse(reader)
 	if err != nil {
-		return nil, err
+		return posts, err
 	}
 
-	var posts []Post
-	posts = createPosts(HtmlNode{doc}, posts)
-	return posts, nil
+	return createPosts(HtmlNode{doc}), nil
 }
 
-func createPosts(root HtmlNode, posts []Post) []Post {
+func createPosts(root HtmlNode) Posts {
+	var (
+		posts       []Post
+		description string
+	)
+
 	for d := range root.FindDescendants("div", "thing") {
 		post := createPost(d)
 		posts = append(posts, post)
 	}
 
-	return posts
+	for d := range root.FindDescendants("meta") {
+		if d.GetAttr("name") == "description" {
+			description = d.GetAttr("content")
+		}
+	}
+
+	return Posts{
+		Posts:       posts,
+		Description: description,
+	}
 }
 
 func createPost(n HtmlNode) Post {
@@ -131,7 +159,6 @@ func createPost(n HtmlNode) Post {
 func createComments(root HtmlNode, depth int, comments []Comment) []Comment {
 	var commentsNode HtmlNode
 
-	// Comments node are found under class "sitetable listing" or "sitetable nestedlisting"
 	commentsNode, ok := root.FindDescendant("div", "sitetable", "nestedlisting")
 	if !ok {
 		commentsNode, ok = root.FindDescendant("div", "sitetable", "listing")
@@ -148,7 +175,6 @@ func createComments(root HtmlNode, depth int, comments []Comment) []Comment {
 
 		comments = parseCommentNode(entryNode, depth, comments)
 
-		// Find child comments
 		if n, ok := c.FindChild("div", "child"); ok {
 			comments = createComments(n, depth+1, comments)
 		}
