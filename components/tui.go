@@ -5,13 +5,13 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var appStyle = lipgloss.NewStyle().Margin(1, 2)
+
 type returnToPostsMsg struct{}
 
 func ReturnToPosts() tea.Msg {
 	return returnToPostsMsg{}
 }
-
-var appStyle = lipgloss.NewStyle().Margin(1, 2)
 
 type RedditTui struct {
 	postsPage    PostsPage
@@ -20,9 +20,10 @@ type RedditTui struct {
 
 func NewRedditTui() RedditTui {
 	postsPage := NewPostsPage()
-	postsPage.Focus()
-
 	commentsPage := NewCommentsPage()
+
+	postsPage.Focus()
+	commentsPage.Blur()
 
 	return RedditTui{postsPage, commentsPage}
 }
@@ -42,18 +43,13 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.commentsPage.Focus()
 		r.postsPage.Blur()
 
-		subreddit := msg.post.Subreddit
-		if len(subreddit) == 0 {
-			subreddit = msg.subreddit
-		}
-
-		cmd := r.commentsPage.LoadComments(msg.post.CommentsUrl, msg.post.PostTitle, subreddit)
+		cmd := r.commentsPage.LoadComments(msg.CommentsUrl, msg.PostTitle)
 		return r, cmd
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "esc", "q":
-			if !r.commentsPage.IsFocused() && !r.postsPage.searching {
+			if !r.commentsPage.IsFocused() && !r.postsPage.search.Searching {
 				return r, tea.Quit
 			}
 		case "ctrl+c":
@@ -62,7 +58,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
-		newW, newH := msg.Width-h, msg.Height-v
+		newW, newH := msg.Width-h-2, msg.Height-v
 		r.postsPage.SetSize(newW, newH)
 		r.commentsPage.SetSize(newW, newH)
 	}
@@ -79,8 +75,8 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (r RedditTui) View() string {
 	if r.postsPage.IsFocused() {
-		return r.postsPage.View()
+		return appStyle.Render(r.postsPage.View())
 	} else {
-		return r.commentsPage.View()
+		return appStyle.Render(r.commentsPage.View())
 	}
 }

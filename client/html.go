@@ -59,6 +59,10 @@ func (n HtmlNode) Text() string {
 	return ""
 }
 
+func (n HtmlNode) Tag() string {
+	return n.Data
+}
+
 func (n HtmlNode) TagEquals(tag string) bool {
 	return n.Type == html.ElementNode && n.Data == tag
 }
