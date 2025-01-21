@@ -77,16 +77,9 @@ func (c CommentsPage) Init() tea.Cmd {
 
 func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
 	switch msg := msg.(type) {
-
 	case updateCommentsMsg:
 		cmd := c.UpdateComments(client.Comments(msg))
 		return c, cmd
-
-	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "backspace":
-			return c, ReturnToPosts
-		}
 	}
 
 	var cmd tea.Cmd

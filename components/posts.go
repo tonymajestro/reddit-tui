@@ -31,6 +31,7 @@ type PostsPage struct {
 	search       SubredditSearch
 	w, h         int
 	focus        bool
+	home         bool
 }
 
 func NewPostsPage() PostsPage {
@@ -51,6 +52,7 @@ func NewPostsPage() PostsPage {
 		redditClient: redditClient,
 		spinner:      spinner,
 		header:       header,
+		home:         true,
 	}
 }
 
@@ -76,13 +78,11 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 			if p.search.Searching {
 				p.HideSearch()
 				return p, nil
-			} else {
-				return p, tea.Quit
 			}
 		case "enter":
 			if p.search.Searching {
 				p.HideSearch()
-				return p, p.LoadSubreddit(p.search.Value())
+				return p, GoSubreddit(p.search.Value())
 			} else if !p.spinner.Loading {
 				loadCommentsCmd := func() tea.Msg {
 					post := p.posts[p.list.Index()]
@@ -91,8 +91,6 @@ func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 
 				return p, loadCommentsCmd
 			}
-		case "ctrl+c":
-			return p, tea.Quit
 		case "s", "S":
 			if !p.search.Searching && !p.spinner.Loading {
 				return p, p.ShowSearch()
@@ -142,6 +140,18 @@ func (p *PostsPage) Blur() {
 	p.focus = false
 }
 
+func (p PostsPage) IsSearching() bool {
+	return p.search.Searching
+}
+
+func (p PostsPage) IsLoading() bool {
+	return p.spinner.Loading
+}
+
+func (p PostsPage) IsHome() bool {
+	return p.home
+}
+
 func (p *PostsPage) SetSize(w, h int) {
 	p.w = w
 	p.h = h
@@ -167,6 +177,7 @@ func (p *PostsPage) HideSearch() {
 }
 
 func (p *PostsPage) LoadHome() tea.Cmd {
+	p.spinner.SetLoading(true)
 	p.spinner.SetLoadingMessage(defaultLoadingMessage)
 
 	getPostsCmd := func() tea.Msg {
@@ -184,8 +195,10 @@ func (p *PostsPage) UpdatePosts(posts client.Posts) {
 
 	if posts.IsHome {
 		p.header.SetTitle(defaultHeaderTitle)
+		p.home = true
 	} else {
 		p.header.SetTitle(normalizeSubreddit(posts.Subreddit))
+		p.home = false
 	}
 
 	p.header.SetDescription(posts.Description)
