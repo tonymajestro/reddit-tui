@@ -93,6 +93,12 @@ func createCommentsList(node HtmlNode, depth int, comments []Comment) []Comment 
 	}
 
 	for c := range commentsNode.FindChildren("div", "thing", "comment") {
+		if c.ClassContains("deleted") {
+			// Skip deleted comments and their children
+			// todo: figure out how to render these properly
+			continue
+		}
+
 		entryNode, ok := c.FindChild("div", "entry", "unvoted")
 		if !ok {
 			continue
