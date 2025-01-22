@@ -29,6 +29,7 @@ func NewCommentsPage() CommentsPage {
 	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	items.SetShowTitle(false)
 	items.SetShowStatusBar(false)
+	items.SetFilteringEnabled(false)
 
 	redditClient := client.New()
 	header := NewHeader()

@@ -65,6 +65,7 @@ func NewPostsPage() PostsPage {
 	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	items.SetShowTitle(false)
 	items.SetShowStatusBar(false)
+	items.SetFilteringEnabled(false)
 	items.AdditionalShortHelpKeys = keys.ShortHelp
 	items.AdditionalFullHelpKeys = keys.FullHelp
 
