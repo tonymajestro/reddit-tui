@@ -3,6 +3,7 @@ package components
 import (
 	"log"
 	"reddittui/client"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -102,6 +103,10 @@ func (c CommentsPage) View() string {
 	postTextView := c.postText.View()
 	listView := c.list.View()
 
+	if len(postTextView) == 0 {
+		return lipgloss.JoinVertical(lipgloss.Left, headerView, listView)
+	}
+
 	return lipgloss.JoinVertical(lipgloss.Left, headerView, postTextView, listView)
 }
 
@@ -127,7 +132,7 @@ func (c *CommentsPage) UpdateComments(comments client.Comments) tea.Cmd {
 	c.header.SetTitle(normalizeSubreddit(comments.Subreddit))
 	c.header.SetDescription(comments.PostTitle)
 
-	c.postText.Contents = comments.Text
+	c.postText.Contents = strings.TrimSpace(comments.Text)
 	c.comments = comments.Comments
 	c.list.ResetSelected()
 

@@ -117,9 +117,12 @@ func parseCommentNode(node HtmlNode, depth int, comments []Comment) []Comment {
 			comment.Author = authorNode.Text()
 		}
 
+		// Default to 1 point if the comment is too new to show points
+		points := "1 point"
 		if likesNode, ok := taglineNode.FindChild("span", "score", "likes"); ok {
-			comment.Points = likesNode.Text()
+			points = likesNode.Text()
 		}
+		comment.Points = points
 
 		if timestampNode, ok := taglineNode.FindChild("time", "live-timestamp"); ok {
 			comment.Timestamp = timestampNode.Text()
@@ -172,7 +175,7 @@ func getPostText(root HtmlNode) string {
 		}
 	}
 
-	return postText.String()
+	return ""
 }
 
 func getSubreddit(root HtmlNode) string {

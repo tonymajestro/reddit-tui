@@ -4,7 +4,7 @@ import "github.com/charmbracelet/lipgloss"
 
 var (
 	postTextStyle          = lipgloss.NewStyle()
-	postTextContainerStyle = lipgloss.NewStyle().Margin(0, 2, 1, 2)
+	postTextContainerStyle = lipgloss.NewStyle().Margin(0, 2)
 )
 
 type PostText struct {
@@ -18,6 +18,10 @@ func NewPostText() PostText {
 }
 
 func (p PostText) View() string {
+	if len(p.Contents) == 0 {
+		return ""
+	}
+
 	view := p.Style.Render(p.Contents)
 	return postTextContainerStyle.Render(view)
 }
