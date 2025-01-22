@@ -3,10 +3,13 @@ package client
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
 )
+
+var postTextTrimRegex = regexp.MustCompile("\n\n\n+")
 
 type RedditCommentsClient struct {
 	client *http.Client
@@ -160,28 +163,38 @@ func getTitle(root HtmlNode) string {
 }
 
 func getPostText(root HtmlNode) string {
-	var postText strings.Builder
-
 	if linkListingNode, ok := root.FindDescendant("div", "sitetable", "linklisting"); ok {
 		if mdNode, ok := linkListingNode.FindDescendant("div", "md"); ok {
-			for n := range mdNode.Descendants() {
-				nNode := HtmlNode{n}
+			var postText strings.Builder
+			getPostTextHelper(mdNode, &postText)
 
-				if len(nNode.Text()) > 0 {
-					postText.WriteString(nNode.Text())
-				} else if nNode.TagEquals("hr") {
-					postText.WriteString("\n")
-				}
-
-				switch nNode.Tag() {
-				case "p", "div", "li":
-					postText.WriteString("\n")
-				}
-			}
+			return postTextTrimRegex.ReplaceAllString(postText.String(), "\n\n")
 		}
 	}
 
 	return ""
+}
+
+func getPostTextHelper(node HtmlNode, postText *strings.Builder) {
+	for child := range node.ChildNodes() {
+		cNode := HtmlNode{child}
+
+		var blockText strings.Builder
+		collectBlockText(cNode, &blockText)
+		postText.WriteString(strings.TrimSpace(blockText.String()) + "\n")
+	}
+}
+
+func collectBlockText(blockNode HtmlNode, blockText *strings.Builder) {
+	if blockNode.Type == html.TextNode {
+		blockText.WriteString(blockNode.Data)
+	} else if blockNode.Tag() == "li" || blockNode.Tag() == "ol" {
+		blockText.WriteString("- ")
+	}
+
+	for child := range blockNode.ChildNodes() {
+		collectBlockText(HtmlNode{child}, blockText)
+	}
 }
 
 func getSubreddit(root HtmlNode) string {
