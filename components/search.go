@@ -9,7 +9,7 @@ import (
 
 var (
 	searchStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-	searchContainerStyle = lipgloss.NewStyle().Margin(1, 2, 2, 2)
+	searchContainerStyle = lipgloss.NewStyle().Margin(1, 2)
 )
 
 type SubredditSearch struct {

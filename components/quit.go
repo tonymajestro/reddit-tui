@@ -37,7 +37,7 @@ var (
 	quitContainerStyle = lipgloss.NewStyle().Margin(1, 2)
 )
 
-type keymap struct {
+type quitKeyMap struct {
 	Left  key.Binding
 	Right key.Binding
 	Yes   key.Binding
@@ -48,18 +48,18 @@ type keymap struct {
 	Help  key.Binding
 }
 
-func (k keymap) ShortHelp() []key.Binding {
+func (k quitKeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{k.Left, k.Right, k.Enter, k.Help}
 }
 
-func (k keymap) FullHelp() [][]key.Binding {
+func (k quitKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Left, k.Right, k.Yes, k.No},
 		{k.Tab, k.Help, k.Enter},
 	}
 }
 
-var keys = keymap{
+var keys = quitKeyMap{
 	Left: key.NewBinding(
 		key.WithKeys("left", "h"),
 		key.WithHelp("←/h", "move left"),
@@ -91,7 +91,7 @@ var keys = keymap{
 }
 
 type QuitPage struct {
-	keys        keymap
+	keys        quitKeyMap
 	help        help.Model
 	yesStyle    lipgloss.Style
 	noStyle     lipgloss.Style

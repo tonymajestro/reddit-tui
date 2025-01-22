@@ -110,8 +110,10 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return r, tea.Quit
 
-		case "h":
-			if !r.quitPage.IsFocused() && !r.postsPage.IsSearching() {
+		case "H":
+			if r.focusStack.Peek() == Home {
+				return r, nil
+			} else if !r.quitPage.IsFocused() && !r.postsPage.IsSearching() {
 				return r, GoHome
 			}
 

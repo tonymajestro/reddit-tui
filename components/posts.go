@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reddittui/client"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -22,6 +23,20 @@ type (
 	updatePostsMsg client.Posts
 )
 
+type postsKeyMap struct {
+	Home   key.Binding
+	Search key.Binding
+	Back   key.Binding
+}
+
+func (k postsKeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Home, k.Search}
+}
+
+func (k postsKeyMap) FullHelp() []key.Binding {
+	return []key.Binding{k.Home, k.Search, k.Back}
+}
+
 type PostsPage struct {
 	posts        []client.Post
 	redditClient client.RedditClient
@@ -35,9 +50,23 @@ type PostsPage struct {
 }
 
 func NewPostsPage() PostsPage {
+	keys := postsKeyMap{
+		Home: key.NewBinding(
+			key.WithKeys("H"),
+			key.WithHelp("H", "home")),
+		Search: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("s", "subreddit search")),
+		Back: key.NewBinding(
+			key.WithKeys("bs"),
+			key.WithHelp("bs", "back")),
+	}
+
 	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	items.SetShowTitle(false)
 	items.SetShowStatusBar(false)
+	items.AdditionalShortHelpKeys = keys.ShortHelp
+	items.AdditionalFullHelpKeys = keys.FullHelp
 
 	header := NewHeader()
 	search := NewSubredditSearch()
@@ -156,11 +185,11 @@ func (p *PostsPage) SetSize(w, h int) {
 	p.w = w
 	p.h = h
 
-	p.ResizeComponents(w, h)
+	p.ResizeComponents()
 }
 
-func (p *PostsPage) ResizeComponents(w int, h int) {
-	p.header.SetSize(w, h)
+func (p *PostsPage) ResizeComponents() {
+	p.header.SetSize(p.w, p.h)
 	p.resizeList()
 }
 
@@ -212,7 +241,7 @@ func (p *PostsPage) UpdatePosts(posts client.Posts) {
 	p.list.SetItems(listItems)
 
 	// Need to set size again when content loads so padding and margins are correct
-	p.SetSize(p.w, p.h)
+	p.ResizeComponents()
 }
 
 func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
