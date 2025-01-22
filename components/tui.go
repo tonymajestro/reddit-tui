@@ -173,6 +173,6 @@ func (r *RedditTui) PromptQuit() {
 	r.focusStack.Push(Quit)
 }
 
-func (r RedditTui) CanGoBack() bool {
+func (r *RedditTui) CanGoBack() bool {
 	return !r.quitPage.IsFocused() && (!r.postsPage.IsFocused() || !r.postsPage.IsSearching())
 }

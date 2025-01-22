@@ -158,7 +158,7 @@ func (p PostsPage) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, headerView, listView)
 }
 
-func (p PostsPage) IsFocused() bool {
+func (p *PostsPage) IsFocused() bool {
 	return p.focus
 }
 
@@ -170,15 +170,15 @@ func (p *PostsPage) Blur() {
 	p.focus = false
 }
 
-func (p PostsPage) IsSearching() bool {
+func (p *PostsPage) IsSearching() bool {
 	return p.search.Searching
 }
 
-func (p PostsPage) IsLoading() bool {
+func (p *PostsPage) IsLoading() bool {
 	return p.spinner.Loading
 }
 
-func (p PostsPage) IsHome() bool {
+func (p *PostsPage) IsHome() bool {
 	return p.home
 }
 

@@ -61,7 +61,7 @@ func (c *CommentsPage) ResizeComponents() {
 	c.list.SetSize(c.w, listHeight)
 }
 
-func (c CommentsPage) IsFocused() bool {
+func (c *CommentsPage) IsFocused() bool {
 	return c.focus
 }
 
