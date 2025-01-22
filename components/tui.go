@@ -65,7 +65,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case Home:
 			r.Focus(Home)
 
-			if prevPage == Quit {
+			if prevPage == Quit || prevPage == Comments {
 				return r, nil
 			} else {
 				return r, GoHome
