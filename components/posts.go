@@ -10,6 +10,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var postsListStyle = lipgloss.NewStyle().MarginRight(4)
+
 const (
 	defaultHeaderTitle       = "reddit.com"
 	defaultHeaderDescription = "The front page of the internet"
@@ -208,7 +210,7 @@ func (p *PostsPage) HideSearch() {
 
 func (p *PostsPage) LoadHome() tea.Cmd {
 	p.spinner.SetLoading(true)
-	p.spinner.SetLoadingMessage(defaultLoadingMessage)
+	p.spinner.LoadingMessage = defaultLoadingMessage
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetHomePosts()
@@ -247,7 +249,7 @@ func (p *PostsPage) UpdatePosts(posts client.Posts) {
 
 func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 	p.spinner.SetLoading(true)
-	p.spinner.SetLoadingMessage(fmt.Sprintf("loading %s...", normalizeSubreddit(subreddit)))
+	p.spinner.LoadingMessage = fmt.Sprintf("loading %s...", normalizeSubreddit(subreddit))
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
@@ -258,9 +260,11 @@ func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 }
 
 func (p *PostsPage) resizeList() {
-	var listHeight int
-
-	headerHeight := lipgloss.Height(p.header.View())
+	var (
+		listHeight   int
+		listWidth    = p.w - postsListStyle.GetHorizontalFrameSize()
+		headerHeight = lipgloss.Height(p.header.View())
+	)
 
 	if p.search.Searching {
 		searchHeight := lipgloss.Height(p.search.View())
@@ -269,5 +273,5 @@ func (p *PostsPage) resizeList() {
 		listHeight = p.h - headerHeight
 	}
 
-	p.list.SetSize(p.w, listHeight)
+	p.list.SetSize(listWidth, listHeight)
 }

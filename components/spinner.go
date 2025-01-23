@@ -46,10 +46,6 @@ func (s Spinner) View() string {
 	return spinnerContainerStyle.Render(view)
 }
 
-func (s *Spinner) SetLoadingMessage(message string) {
-	s.LoadingMessage = message
-}
-
 func (s *Spinner) SetLoading(loading bool) {
 	s.Loading = loading
 	if loading {

@@ -15,7 +15,7 @@ var (
 				Foreground(lipgloss.Color("230"))
 
 	defaultDescriptionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
-	headerContainerStyle    = lipgloss.NewStyle().Margin(0, 2, 1, 2)
+	headerContainerStyle    = lipgloss.NewStyle().MarginBottom(1)
 )
 
 type Header struct {

@@ -125,7 +125,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		h, v := appStyle.GetFrameSize()
-		newW, newH := msg.Width-h-2, msg.Height-v
+		newW, newH := msg.Width-h, msg.Height-v
 		r.postsPage.SetSize(newW, newH)
 		r.commentsPage.SetSize(newW, newH)
 	}

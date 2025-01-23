@@ -11,7 +11,7 @@ import (
 func main() {
 	reddit := components.NewRedditTui()
 
-	p := tea.NewProgram(reddit, tea.WithAltScreen())
+	p := tea.NewProgram(reddit, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)

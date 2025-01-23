@@ -3,7 +3,6 @@ package components
 import (
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -59,40 +58,8 @@ func (k quitKeyMap) FullHelp() [][]key.Binding {
 	}
 }
 
-var keys = quitKeyMap{
-	Left: key.NewBinding(
-		key.WithKeys("left", "h"),
-		key.WithHelp("←/h", "move left"),
-	),
-	Right: key.NewBinding(
-		key.WithKeys("right", "l"),
-		key.WithHelp("→/l", "move right"),
-	),
-	Yes: key.NewBinding(
-		key.WithKeys("y", "Y"),
-		key.WithHelp("y", "quit"),
-	),
-	No: key.NewBinding(
-		key.WithKeys("n", "N"),
-		key.WithHelp("n", "back"),
-	),
-	Tab: key.NewBinding(
-		key.WithKeys("tab"),
-		key.WithHelp("tab", "next selection"),
-	),
-	Enter: key.NewBinding(
-		key.WithKeys("enter"),
-		key.WithHelp("enter", "confirm selection"),
-	),
-	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
-	),
-}
-
 type QuitPage struct {
 	keys        quitKeyMap
-	help        help.Model
 	yesStyle    lipgloss.Style
 	noStyle     lipgloss.Style
 	focus       bool
@@ -100,9 +67,39 @@ type QuitPage struct {
 }
 
 func NewQuitPage() QuitPage {
+	keys := quitKeyMap{
+		Left: key.NewBinding(
+			key.WithKeys("left", "h"),
+			key.WithHelp("←/h", "move left"),
+		),
+		Right: key.NewBinding(
+			key.WithKeys("right", "l"),
+			key.WithHelp("→/l", "move right"),
+		),
+		Yes: key.NewBinding(
+			key.WithKeys("y", "Y"),
+			key.WithHelp("y", "quit"),
+		),
+		No: key.NewBinding(
+			key.WithKeys("n", "N"),
+			key.WithHelp("n", "back"),
+		),
+		Tab: key.NewBinding(
+			key.WithKeys("tab"),
+			key.WithHelp("tab", "next selection"),
+		),
+		Enter: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "confirm selection"),
+		),
+		Help: key.NewBinding(
+			key.WithKeys("?"),
+			key.WithHelp("?", "toggle help"),
+		),
+	}
+
 	quitPage := QuitPage{
 		keys:     keys,
-		help:     help.New(),
 		yesStyle: focusButtonStyle,
 		noStyle:  blurButtonStyle,
 		focus:    false,
@@ -117,9 +114,8 @@ func (q QuitPage) View() string {
 	noView := q.noStyle.Render(noButtonText)
 	yesView := q.yesStyle.Render(yesButtonText)
 
-	buttonsView := buttonsContainerStyle.Render(fmt.Sprintf("    %s  %s", noView, yesView))
-	helpView := q.help.View(q.keys)
-	joinedView := lipgloss.JoinVertical(lipgloss.Left, promptView, buttonsView, helpView)
+	buttonsView := buttonsContainerStyle.Render(fmt.Sprintf("        %s  %s", noView, yesView))
+	joinedView := lipgloss.JoinVertical(lipgloss.Left, promptView, buttonsView)
 
 	return quitContainerStyle.Render(joinedView)
 }
@@ -155,9 +151,6 @@ func (q QuitPage) Update(msg tea.Msg) (QuitPage, tea.Cmd) {
 				q.Blur()
 				return q, GoBack
 			}
-
-		case key.Matches(msg, q.keys.Help):
-			q.help.ShowAll = !q.help.ShowAll
 		}
 	}
 

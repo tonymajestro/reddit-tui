@@ -3,9 +3,7 @@ package components
 import (
 	"log"
 	"reddittui/client"
-	"strings"
 
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -16,31 +14,22 @@ type updateCommentsMsg client.Comments
 
 type CommentsPage struct {
 	redditClient client.RedditClient
-	comments     []client.Comment
 	header       Header
-	postText     PostText
-	list         list.Model
+	pager        CommentsViewport
 	spinner      Spinner
 	focus        bool
 	w, h         int
 }
 
 func NewCommentsPage() CommentsPage {
-	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
-	items.SetShowTitle(false)
-	items.SetShowStatusBar(false)
-	items.SetFilteringEnabled(false)
-
 	redditClient := client.New()
 	header := NewHeader()
-	postText := NewPostText()
+	vp := NewCommentsViewport()
 
 	return CommentsPage{
-		comments:     []client.Comment{},
-		list:         items,
 		redditClient: redditClient,
 		header:       header,
-		postText:     postText,
+		pager:        vp,
 	}
 }
 
@@ -52,13 +41,13 @@ func (c *CommentsPage) SetSize(w, h int) {
 }
 
 func (c *CommentsPage) ResizeComponents() {
-	headerHeight := lipgloss.Height(c.header.View())
-	postTextViewHeight := lipgloss.Height(c.postText.View())
-	listHeight := c.h - headerHeight - postTextViewHeight
+	var (
+		headerHeight = lipgloss.Height(c.header.View())
+		pagerHeight  = c.h - headerHeight
+	)
 
 	c.header.SetSize(c.w, c.h)
-	c.postText.SetSize(c.w, c.h)
-	c.list.SetSize(c.w, listHeight)
+	c.pager.SetSize(c.w, pagerHeight)
 }
 
 func (c *CommentsPage) IsFocused() bool {
@@ -80,17 +69,16 @@ func (c CommentsPage) Init() tea.Cmd {
 func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
 	switch msg := msg.(type) {
 	case updateCommentsMsg:
-		cmd := c.UpdateComments(client.Comments(msg))
-		return c, cmd
+		c.UpdateComments(client.Comments(msg))
+		return c, nil
 	}
 
 	var cmd tea.Cmd
-
 	if c.spinner.Loading {
 		c.spinner, cmd = c.spinner.Update(msg)
 		return c, cmd
 	} else {
-		c.list, cmd = c.list.Update(msg)
+		c.pager, cmd = c.pager.Update(msg)
 		return c, cmd
 	}
 }
@@ -101,19 +89,14 @@ func (c CommentsPage) View() string {
 	}
 
 	headerView := c.header.View()
-	postTextView := c.postText.View()
-	listView := c.list.View()
+	pagerView := c.pager.View()
 
-	if len(postTextView) == 0 {
-		return lipgloss.JoinVertical(lipgloss.Left, headerView, listView)
-	}
-
-	return lipgloss.JoinVertical(lipgloss.Left, headerView, postTextView, listView)
+	return lipgloss.JoinVertical(lipgloss.Left, headerView, pagerView)
 }
 
 func (c *CommentsPage) LoadComments(url, title string) tea.Cmd {
 	c.spinner.SetLoading(true)
-	c.spinner.SetLoadingMessage("loading comments...")
+	c.spinner.LoadingMessage = "loading comments..."
 
 	loadCommentsCmd := func() tea.Msg {
 		comments, err := c.redditClient.GetComments(url)
@@ -127,23 +110,14 @@ func (c *CommentsPage) LoadComments(url, title string) tea.Cmd {
 	return tea.Batch(loadCommentsCmd, c.spinner.Tick)
 }
 
-func (c *CommentsPage) UpdateComments(comments client.Comments) tea.Cmd {
+func (c *CommentsPage) UpdateComments(comments client.Comments) {
 	c.spinner.SetLoading(false)
 
 	c.header.SetTitle(normalizeSubreddit(comments.Subreddit))
 	c.header.SetDescription(comments.PostTitle)
 
-	c.postText.Contents = strings.TrimSpace(comments.Text)
-	c.comments = comments.Comments
-	c.list.ResetSelected()
+	c.pager.SetContent(comments.Text, comments.Comments)
 
 	// Need to resize components when content loads so padding and margins are correct
 	c.ResizeComponents()
-
-	var listItems []list.Item
-	for _, c := range comments.Comments {
-		listItems = append(listItems, c)
-	}
-
-	return c.list.SetItems(listItems)
 }
