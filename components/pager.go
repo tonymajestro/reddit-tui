@@ -139,7 +139,7 @@ func (c *CommentsViewport) ResizeComponents() {
 	)
 
 	c.viewport.Width = c.w
-	c.viewport.Height = c.h - helpHeight
+	c.viewport.Height = c.h - helpHeight - 1
 
 	content.WriteString(c.postText)
 	content.WriteString("\n")
@@ -179,7 +179,7 @@ func formatLine(s string, width, padding int) string {
 		lineW = padding
 	)
 
-	lines.WriteString(strings.Repeat(" ", padding))
+	lines.WriteString(strings.Repeat("  ", padding))
 
 	for _, word := range strings.Fields(s) {
 		runes := []rune(word)
@@ -197,14 +197,14 @@ func formatLine(s string, width, padding int) string {
 
 				lines.WriteString(string(left))
 				lines.WriteString("-\n")
-				lines.WriteString(strings.Repeat(" ", padding))
+				lines.WriteString(strings.Repeat("  ", padding))
 				lines.WriteString(string(right))
 				lines.WriteRune(' ')
 
 				lineW = padding + len(right) + 1
 			} else {
 				lines.WriteRune('\n')
-				lines.WriteString(strings.Repeat(" ", padding))
+				lines.WriteString(strings.Repeat("  ", padding))
 				lines.WriteString(word)
 
 				lineW = padding + len(runes)
