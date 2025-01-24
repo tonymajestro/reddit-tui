@@ -172,50 +172,50 @@ func (c *CommentsViewport) formatComment(comment client.Comment) string {
 //
 // If the string is longer than 'width', it will be split into multiple lines that are
 // no more than 'width' wide. Each line will also have padded whitespace according to
-// the 'padding' argument.
-func formatLine(s string, width, padding int) string {
+// the 'depth' argument.
+func formatLine(s string, width, depth int) string {
 	var (
-		lines strings.Builder
-		lineW = padding
+		lines   strings.Builder
+		lineW   = depth
+		padding = strings.Repeat("  ", depth)
 	)
 
-	lines.WriteString(strings.Repeat("  ", padding))
+	lines.WriteString(padding)
 
 	for _, word := range strings.Fields(s) {
 		runes := []rune(word)
 
 		if lineW+len(runes) > width {
-			// Word won't fit on current line. Add linebreak and padding and write word to next line
+			// Word doesn't fit on current line.
+			// Add linebreak and padding and write word to next line
 
-			if lineW == padding {
-				// Edge case where first word on line won't fit
+			if lineW > depth {
+				lines.WriteRune('\n')
+				lines.WriteString(padding)
+				lines.WriteString(word)
+				lineW = depth + len(runes)
+			} else {
+				// Edge case where first word on line doesn't fit
 				//
-				// hack: assume the word will fit on two lines
-				// to-do: split the word into the correct number of lines
+				// Hack: assume the word will fit on two lines
+				// To-do: split the word into the correct number of lines
 
-				left, right := runes[:width-padding], runes[width-padding:]
+				left, right := runes[:width-depth], runes[width-depth:]
 
 				lines.WriteString(string(left))
 				lines.WriteString("-\n")
-				lines.WriteString(strings.Repeat("  ", padding))
+				lines.WriteString(padding)
 				lines.WriteString(string(right))
 				lines.WriteRune(' ')
 
-				lineW = padding + len(right) + 1
-			} else {
-				lines.WriteRune('\n')
-				lines.WriteString(strings.Repeat("  ", padding))
-				lines.WriteString(word)
-
-				lineW = padding + len(runes)
+				lineW = depth + len(right) + 1
 			}
 		} else {
-			// Word fits on current line
+			// Word fits on current line, write it to buffer
 			lines.WriteString(word)
 			lines.WriteRune(' ')
 			lineW += len(runes) + 1
 		}
-
 	}
 
 	return lines.String()

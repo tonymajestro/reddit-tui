@@ -114,6 +114,11 @@ func createPosts(root HtmlNode) Posts {
 	)
 
 	for d := range root.FindDescendants("div", "thing") {
+		if d.ClassContains("promoted", "promotedlink") {
+			// Skip ads and promotional content
+			continue
+		}
+
 		post := createPost(d)
 		posts = append(posts, post)
 	}
