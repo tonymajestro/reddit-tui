@@ -2,6 +2,10 @@
 Terminal UI for reddit
 
 
-## Screenshot
+# Images
 
-![reddit-tui screenshot](/images/reddit.png)
+## Posts
+![Posts](/images/posts.png)
+
+## Comments
+![Comments](/images/comments.png)
