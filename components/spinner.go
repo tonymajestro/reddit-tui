@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"reddittui/components/colors"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,7 +10,7 @@ import (
 )
 
 var (
-	spinnerStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	spinnerStyle          = lipgloss.NewStyle().Foreground(colors.Blue)
 	spinnerContainerStyle = lipgloss.NewStyle().Margin(2, 2)
 )
 

@@ -3,6 +3,8 @@ package components
 import (
 	"fmt"
 	"reddittui/client"
+	"reddittui/components/header"
+	"reddittui/utils"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -42,7 +44,7 @@ func (k postsKeyMap) FullHelp() []key.Binding {
 type PostsPage struct {
 	posts        []client.Post
 	redditClient client.RedditClient
-	header       Header
+	header       header.PostsHeader
 	list         list.Model
 	spinner      Spinner
 	search       SubredditSearch
@@ -71,7 +73,7 @@ func NewPostsPage() PostsPage {
 	items.AdditionalShortHelpKeys = keys.ShortHelp
 	items.AdditionalFullHelpKeys = keys.FullHelp
 
-	header := NewHeader()
+	header := header.NewPostsHeader()
 	search := NewSubredditSearch()
 	spinner := NewSpinner()
 
@@ -226,14 +228,12 @@ func (p *PostsPage) UpdatePosts(posts client.Posts) {
 	p.posts = posts.Posts
 
 	if posts.IsHome {
-		p.header.SetTitle(defaultHeaderTitle)
+		p.header.SetContent(defaultHeaderTitle, defaultHeaderDescription)
 		p.home = true
 	} else {
-		p.header.SetTitle(normalizeSubreddit(posts.Subreddit))
+		p.header.SetContent(posts.Subreddit, posts.Description)
 		p.home = false
 	}
-
-	p.header.SetDescription(posts.Description)
 
 	p.list.ResetSelected()
 
@@ -249,7 +249,7 @@ func (p *PostsPage) UpdatePosts(posts client.Posts) {
 
 func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 	p.spinner.SetLoading(true)
-	p.spinner.LoadingMessage = fmt.Sprintf("loading %s...", normalizeSubreddit(subreddit))
+	p.spinner.LoadingMessage = fmt.Sprintf("loading %s...", utils.NormalizeSubreddit(subreddit))
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)

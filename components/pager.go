@@ -3,6 +3,8 @@ package components
 import (
 	"fmt"
 	"reddittui/client"
+	"reddittui/components/colors"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -12,11 +14,16 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var viewportStyle = lipgloss.NewStyle().Margin(0, 4, 1, 4)
+
+// Comments styles
 var (
-	viewportStyle = lipgloss.NewStyle().Margin(0, 4, 1, 4)
-	authorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-	dateStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
-	pointsStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+	commentAuthorStyle  = lipgloss.NewStyle().Foreground(colors.Blue).Bold(true)
+	commentDateStyle    = lipgloss.NewStyle().Foreground(colors.Lavender).Italic(true)
+	commentTextStyle    = lipgloss.NewStyle().Foreground(colors.Text)
+	popularPointsStyle  = lipgloss.NewStyle().Foreground(colors.Green)
+	defaultPointsStyle  = lipgloss.NewStyle().Foreground(colors.Orange)
+	negativePointsStyle = lipgloss.NewStyle().Foreground(colors.Red)
 )
 
 type viewportKeyMap struct {
@@ -125,9 +132,10 @@ func (c *CommentsViewport) SetSize(w, h int) {
 	c.ResizeComponents()
 }
 
-func (c *CommentsViewport) SetContent(postText string, comments []client.Comment) {
-	c.postText = postText
-	c.comments = comments
+func (c *CommentsViewport) SetContent(comments client.Comments) {
+	c.postText = comments.PostText
+	c.comments = comments.Comments
+
 	c.viewport.SetYOffset(0)
 	c.ResizeComponents()
 }
@@ -141,8 +149,10 @@ func (c *CommentsViewport) ResizeComponents() {
 	c.viewport.Width = c.w
 	c.viewport.Height = c.h - helpHeight - 1
 
-	content.WriteString(c.postText)
-	content.WriteString("\n")
+	if len(c.postText) > 0 {
+		content.WriteString(c.postText)
+		content.WriteString("\n")
+	}
 
 	for _, comment := range c.comments {
 		content.WriteString(c.formatComment(comment))
@@ -158,12 +168,12 @@ func (c *CommentsViewport) formatComment(comment client.Comment) string {
 		commentWidth = c.w - tabWidth
 	)
 
-	authorView := authorStyle.Render(comment.Author)
-	dateView := dateStyle.Render(comment.Timestamp)
+	authorView := commentAuthorStyle.Render(comment.Author)
+	dateView := commentDateStyle.Render(comment.Timestamp)
 	authorAndPointsView := formatLine(fmt.Sprintf("%s • %s", authorView, dateView), commentWidth, comment.Depth)
 
-	commentTextView := formatLine(comment.Text, commentWidth, comment.Depth)
-	pointsView := formatLine(pointsStyle.Render(comment.Points), commentWidth, comment.Depth)
+	commentTextView := formatLine(commentTextStyle.Render(comment.Text), commentWidth, comment.Depth)
+	pointsView := formatLine(RenderPoints(comment.Points), commentWidth, comment.Depth)
 
 	return fmt.Sprintf("%s\n%s\n%s\n\n", authorAndPointsView, commentTextView, pointsView)
 }
@@ -219,4 +229,26 @@ func formatLine(s string, width, depth int) string {
 	}
 
 	return lines.String()
+}
+
+func RenderPoints(pointsString string) string {
+	parts := strings.Fields(pointsString)
+	if len(parts) != 2 {
+		return defaultPointsStyle.Render(pointsString)
+	}
+
+	if strings.Contains(parts[0], "-") {
+		return negativePointsStyle.Render(pointsString)
+	} else if strings.Contains(parts[0], "k") {
+		return popularPointsStyle.Render(pointsString)
+	}
+
+	points, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return defaultPointsStyle.Render(pointsString)
+	} else if points >= 1000 {
+		return popularPointsStyle.Render(pointsString)
+	}
+
+	return defaultPointsStyle.Render(pointsString)
 }

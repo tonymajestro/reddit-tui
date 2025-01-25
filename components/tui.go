@@ -5,7 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var appStyle = lipgloss.NewStyle().Margin(1, 2)
+var appStyle = lipgloss.NewStyle().Padding(1, 2)
 
 type (
 	goBackMsg      struct{}
@@ -48,7 +48,8 @@ func NewRedditTui() RedditTui {
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	return r.postsPage.Init()
+	// return r.postsPage.Init()
+	return GoSubreddit("neovim")
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

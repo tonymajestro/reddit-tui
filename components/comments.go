@@ -3,6 +3,7 @@ package components
 import (
 	"log"
 	"reddittui/client"
+	"reddittui/components/header"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -14,7 +15,7 @@ type updateCommentsMsg client.Comments
 
 type CommentsPage struct {
 	redditClient client.RedditClient
-	header       Header
+	header       header.CommentsHeader
 	pager        CommentsViewport
 	spinner      Spinner
 	focus        bool
@@ -23,7 +24,7 @@ type CommentsPage struct {
 
 func NewCommentsPage() CommentsPage {
 	redditClient := client.New()
-	header := NewHeader()
+	header := header.NewCommentsHeader()
 	vp := NewCommentsViewport()
 
 	return CommentsPage{
@@ -113,10 +114,8 @@ func (c *CommentsPage) LoadComments(url, title string) tea.Cmd {
 func (c *CommentsPage) UpdateComments(comments client.Comments) {
 	c.spinner.SetLoading(false)
 
-	c.header.SetTitle(normalizeSubreddit(comments.Subreddit))
-	c.header.SetDescription(comments.PostTitle)
-
-	c.pager.SetContent(comments.Text, comments.Comments)
+	c.header.SetContent(comments)
+	c.pager.SetContent(comments)
 
 	// Need to resize components when content loads so padding and margins are correct
 	c.ResizeComponents()

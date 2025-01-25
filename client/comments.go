@@ -26,12 +26,13 @@ type Comment struct {
 }
 
 type Comments struct {
-	PostTitle string
-	Author    string
-	Subreddit string
-	Text      string
-	Timestamp string
-	Comments  []Comment
+	PostTitle     string
+	PostAuthor    string
+	Subreddit     string
+	PostPoints    string
+	PostText      string
+	PostTimestamp string
+	Comments      []Comment
 }
 
 func (c Comment) Title() string {
@@ -77,8 +78,11 @@ func createCommentsHelper(root HtmlNode) Comments {
 	var commentsList []Comment
 
 	commentsData.PostTitle = getTitle(root)
-	commentsData.Text = getPostText(root)
+	commentsData.PostText = getPostText(root)
+	commentsData.PostAuthor = getPostAuthor(root)
+	commentsData.PostTimestamp = getPostTimestamp(root)
 	commentsData.Subreddit = getSubreddit(root)
+	commentsData.PostPoints = getPostPoints(root)
 	commentsData.Comments = createCommentsList(root, 0, commentsList)
 
 	return commentsData
@@ -175,6 +179,26 @@ func getPostText(root HtmlNode) string {
 	return ""
 }
 
+func getPostAuthor(root HtmlNode) string {
+	if linkListingNode, ok := root.FindDescendant("div", "sitetable", "linklisting"); ok {
+		if authorNode, ok := linkListingNode.FindDescendant("a", "author"); ok {
+			return authorNode.Text()
+		}
+	}
+
+	return ""
+}
+
+func getPostTimestamp(root HtmlNode) string {
+	if linkListingNode, ok := root.FindDescendant("div", "sitetable", "linklisting"); ok {
+		if timestampNode, ok := linkListingNode.FindDescendant("time", "live-timestamp"); ok {
+			return timestampNode.Text()
+		}
+	}
+
+	return ""
+}
+
 func getPostTextHelper(node HtmlNode, postText *strings.Builder) {
 	for child := range node.ChildNodes() {
 		cNode := HtmlNode{child}
@@ -201,6 +225,25 @@ func getSubreddit(root HtmlNode) string {
 	if spanNode, ok := root.FindDescendant("span", "pagename", "redditname"); ok {
 		if subredditNode, ok := spanNode.FindDescendant("a"); ok {
 			return subredditNode.Text()
+		}
+	}
+
+	return ""
+}
+
+func getPostPoints(root HtmlNode) string {
+	if linkListingNode, ok := root.FindDescendant("div", "sitetable", "linklisting"); ok {
+		if likesNode, ok := linkListingNode.FindDescendant("div", "score", "likes"); ok {
+			return likesNode.Text()
+		}
+
+		if unvotedNode, ok := linkListingNode.FindDescendant("div", "score", "unvoted"); ok {
+			return unvotedNode.Text()
+		}
+
+		// Fallback to any score node
+		if pointsNode, ok := linkListingNode.FindDescendant("div", "score"); ok {
+			return pointsNode.Text()
 		}
 	}
 

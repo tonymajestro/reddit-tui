@@ -1,8 +1,8 @@
-package components
+package utils
 
 import "fmt"
 
-func normalizeSubreddit(subreddit string) string {
+func NormalizeSubreddit(subreddit string) string {
 	if len(subreddit) >= 2 && subreddit[:2] == "r/" {
 		return subreddit
 	}
