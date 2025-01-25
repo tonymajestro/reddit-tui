@@ -14,7 +14,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-var viewportStyle = lipgloss.NewStyle().Margin(0, 4, 1, 4)
+var viewportStyle = lipgloss.NewStyle().Margin(0, 2, 1, 2)
 
 // Comments styles
 var (
@@ -203,6 +203,7 @@ func formatLine(s string, width, depth int) string {
 				lines.WriteRune('\n')
 				lines.WriteString(padding)
 				lines.WriteString(word)
+				lines.WriteRune(' ')
 				lineW = depth + len(runes)
 			} else {
 				// Edge case where first word on line doesn't fit
