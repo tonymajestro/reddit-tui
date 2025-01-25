@@ -20,6 +20,7 @@ const (
 	Text
 	Subtext
 	Sand
+	White
 )
 
 type Palette struct {
@@ -36,6 +37,7 @@ type Palette struct {
 	Text     string
 	Subtext  string
 	Sand     string
+	White    string
 }
 
 func (p Palette) ToHex(color Color) string {
@@ -66,6 +68,8 @@ func (p Palette) ToHex(color Color) string {
 		return p.Subtext
 	case Sand:
 		return p.Sand
+	case White:
+		return p.White
 	default:
 		return p.Text
 	}
@@ -86,6 +90,7 @@ var Dark = Palette{
 	Text:     "#cad3f5",
 	Subtext:  "#b8c0e0",
 	Sand:     "#dddddd",
+	White:    "#ffffff",
 }
 
 // catppuccin-latte
@@ -102,6 +107,7 @@ var Light = Palette{
 	Text:     "#4c4f69",
 	Subtext:  "#5c5f77",
 	Sand:     "#dddddd",
+	White:    "#ffffff",
 }
 
 func AdaptiveColors(light, dark Color) lipgloss.AdaptiveColor {

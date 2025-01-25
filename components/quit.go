@@ -21,7 +21,7 @@ var (
 			Padding(0, 2).
 			Height(1).
 			Background(colors.AdaptiveColors(colors.Blue, colors.Indigo)).
-			Foreground(colors.AdaptiveColor(colors.Sand))
+			Foreground(colors.AdaptiveColors(colors.White, colors.Sand))
 
 	blurButtonStyle = lipgloss.NewStyle().
 			Padding(0, 1).
@@ -31,7 +31,7 @@ var (
 	focusButtonStyle = lipgloss.NewStyle().
 				Bold(true).
 				Padding(0, 1).
-				Foreground(colors.AdaptiveColors(colors.Pink, colors.Purple))
+				Foreground(colors.AdaptiveColor(colors.Blue))
 
 	buttonsContainerStyle = lipgloss.NewStyle().MarginBottom(2)
 	quitContainerStyle    = lipgloss.NewStyle().Margin(1, 2)
