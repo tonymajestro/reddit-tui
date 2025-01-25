@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"reddittui/components/colors"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,21 +20,21 @@ var (
 			MarginBottom(1).
 			Padding(0, 2).
 			Height(1).
-			Background(lipgloss.Color("62")).
-			Foreground(lipgloss.Color("230"))
+			Background(colors.AdaptiveColors(colors.Blue, colors.Indigo)).
+			Foreground(colors.AdaptiveColor(colors.Sand))
 
 	blurButtonStyle = lipgloss.NewStyle().
 			Padding(0, 1).
-			Foreground(lipgloss.Color("7"))
+			Faint(true).
+			Foreground(colors.AdaptiveColor(colors.Text))
 
 	focusButtonStyle = lipgloss.NewStyle().
 				Bold(true).
 				Padding(0, 1).
-				Foreground(lipgloss.Color("#EE6FF8"))
+				Foreground(colors.AdaptiveColors(colors.Pink, colors.Purple))
 
 	buttonsContainerStyle = lipgloss.NewStyle().MarginBottom(2)
-
-	quitContainerStyle = lipgloss.NewStyle().Margin(1, 2)
+	quitContainerStyle    = lipgloss.NewStyle().Margin(1, 2)
 )
 
 type quitKeyMap struct {

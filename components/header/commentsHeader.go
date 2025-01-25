@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	postAuthorStyle    = lipgloss.NewStyle().Foreground(colors.Blue)
-	postPointsStyle    = lipgloss.NewStyle().Foreground(colors.Green)
-	postTextStyle      = lipgloss.NewStyle().Foreground(colors.Sand)
-	postTimestampStyle = lipgloss.NewStyle().Foreground(colors.Text).Faint(true)
+	postAuthorStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue))
+	postPointsStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Green))
+	postTextStyle      = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Sand))
+	postTimestampStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Text)).Faint(true)
 )
 
 type CommentsHeader struct {

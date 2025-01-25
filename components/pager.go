@@ -18,12 +18,12 @@ var viewportStyle = lipgloss.NewStyle().Margin(0, 2, 1, 2)
 
 // Comments styles
 var (
-	commentAuthorStyle  = lipgloss.NewStyle().Foreground(colors.Blue).Bold(true)
-	commentDateStyle    = lipgloss.NewStyle().Foreground(colors.Lavender).Italic(true)
-	commentTextStyle    = lipgloss.NewStyle().Foreground(colors.Text)
-	popularPointsStyle  = lipgloss.NewStyle().Foreground(colors.Green)
-	defaultPointsStyle  = lipgloss.NewStyle().Foreground(colors.Orange)
-	negativePointsStyle = lipgloss.NewStyle().Foreground(colors.Red)
+	commentAuthorStyle  = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Bold(true)
+	commentDateStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Lavender)).Italic(true)
+	commentTextStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Text))
+	popularPointsStyle  = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Green))
+	defaultPointsStyle  = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Orange))
+	negativePointsStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Red))
 )
 
 type viewportKeyMap struct {

@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	spinnerStyle          = lipgloss.NewStyle().Foreground(colors.Blue)
+	spinnerStyle          = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue))
+	spinnerTextStyle      = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Text))
 	spinnerContainerStyle = lipgloss.NewStyle().Margin(2, 2)
 )
 
@@ -43,7 +44,8 @@ func (s Spinner) Update(msg tea.Msg) (Spinner, tea.Cmd) {
 }
 
 func (s Spinner) View() string {
-	view := fmt.Sprintf("%s %s", s.Model.View(), s.LoadingMessage)
+	loadingTextView := spinnerTextStyle.Render(s.LoadingMessage)
+	view := fmt.Sprintf("%s %s", s.Model.View(), loadingTextView)
 	return spinnerContainerStyle.Render(view)
 }
 
