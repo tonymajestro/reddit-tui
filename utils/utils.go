@@ -10,6 +10,14 @@ func NormalizeSubreddit(subreddit string) string {
 	return fmt.Sprintf("r/%s", subreddit)
 }
 
+func TruncateString(s string, w int) string {
+	if len(s) <= w {
+		return s
+	}
+
+	return fmt.Sprintf("%s...", s[:w-3])
+}
+
 func Clamp(min, max, val int) int {
 	if val < min {
 		return min

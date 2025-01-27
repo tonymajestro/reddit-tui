@@ -1,38 +1,28 @@
 package components
 
 import (
+	"reddittui/components/comments"
+	"reddittui/components/common"
+	"reddittui/components/messages"
+	"reddittui/components/posts"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var appStyle = lipgloss.NewStyle().Padding(1, 2)
 
-type (
-	goBackMsg      struct{}
-	goHomeMsg      struct{}
-	goSubredditMsg string
-)
-
-func GoBack() tea.Msg { return goBackMsg{} }
-func GoHome() tea.Msg { return goHomeMsg{} }
-
-func GoSubreddit(subreddit string) tea.Cmd {
-	return func() tea.Msg {
-		return goSubredditMsg(subreddit)
-	}
-}
-
 type RedditTui struct {
-	postsPage    PostsPage
-	commentsPage CommentsPage
-	quitPage     QuitPage
+	postsPage    posts.PostsPage
+	commentsPage comments.CommentsPage
+	quitPage     common.QuitPage
 	focusStack   FocusStack
 }
 
 func NewRedditTui() RedditTui {
-	postsPage := NewPostsPage()
-	commentsPage := NewCommentsPage()
-	quitPage := NewQuitPage()
+	postsPage := posts.NewPostsPage()
+	commentsPage := comments.NewCommentsPage()
+	quitPage := common.NewQuitPage()
 
 	postsPage.Focus()
 	commentsPage.Blur()
@@ -49,13 +39,13 @@ func NewRedditTui() RedditTui {
 
 func (r RedditTui) Init() tea.Cmd {
 	// return r.postsPage.Init()
-	return GoSubreddit("neovim")
+	return messages.GoSubreddit("neovim")
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	case goBackMsg:
+	case messages.GoBackMsg:
 		if len(r.focusStack) == 1 {
 			return r, nil
 		}
@@ -69,7 +59,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if prevPage == Quit || prevPage == Comments {
 				return r, nil
 			} else {
-				return r, GoHome
+				return r, messages.GoHome
 			}
 
 		case Subreddit:
@@ -84,19 +74,19 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r, tea.Quit
 		}
 
-	case loadCommentsMsg:
+	case messages.LoadCommentsMsg:
 		r.Focus(Comments)
 		r.focusStack.Push(Comments)
 
 		return r, r.commentsPage.LoadComments(msg.CommentsUrl, msg.PostTitle)
 
-	case goHomeMsg:
+	case messages.GoHomeMsg:
 		r.Focus(Home)
 		r.focusStack.Clear()
 		r.focusStack.Push(Home)
 		return r, r.postsPage.LoadHome()
 
-	case goSubredditMsg:
+	case messages.GoSubredditMsg:
 		r.Focus(Subreddit)
 		r.focusStack.Push(Subreddit)
 		return r, r.postsPage.LoadSubreddit(string(msg))
@@ -115,12 +105,12 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if r.focusStack.Peek() == Home {
 				return r, nil
 			} else if !r.quitPage.IsFocused() && !r.postsPage.IsSearching() {
-				return r, GoHome
+				return r, messages.GoHome
 			}
 
 		case "backspace":
 			if r.CanGoBack() {
-				return r, GoBack
+				return r, messages.GoBack
 			}
 		}
 

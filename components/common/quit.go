@@ -1,8 +1,9 @@
-package components
+package common
 
 import (
 	"fmt"
 	"reddittui/components/colors"
+	"reddittui/components/messages"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -130,7 +131,7 @@ func (q QuitPage) Update(msg tea.Msg) (QuitPage, tea.Cmd) {
 
 		case key.Matches(msg, q.keys.No):
 			q.Blur()
-			return q, GoBack
+			return q, messages.GoBack
 
 		case key.Matches(msg, q.keys.Left):
 			q.SelectNo()
@@ -150,7 +151,7 @@ func (q QuitPage) Update(msg tea.Msg) (QuitPage, tea.Cmd) {
 				return q, tea.Quit
 			} else {
 				q.Blur()
-				return q, GoBack
+				return q, messages.GoBack
 			}
 		}
 	}

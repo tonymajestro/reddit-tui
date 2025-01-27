@@ -1,9 +1,8 @@
-package components
+package comments
 
 import (
 	"fmt"
 	"reddittui/client"
-	"reddittui/components/colors"
 	"strconv"
 	"strings"
 
@@ -13,41 +12,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
-
-var viewportStyle = lipgloss.NewStyle().Margin(0, 2, 1, 2)
-
-var (
-	commentAuthorStyle  = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Bold(true)
-	commentDateStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Lavender)).Italic(true)
-	commentTextStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Text))
-	popularPointsStyle  = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Green))
-	defaultPointsStyle  = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Orange))
-	negativePointsStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Red))
-	collapsedStyle      = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Yellow))
-)
-
-type viewportKeyMap struct {
-	CursorUp         key.Binding
-	CursorDown       key.Binding
-	GoToStart        key.Binding
-	GoToEnd          key.Binding
-	CollapseComments key.Binding
-	ShowFullHelp     key.Binding
-	CloseFullHelp    key.Binding
-	Quit             key.Binding
-	ForceQuit        key.Binding
-}
-
-func (k viewportKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.CursorUp, k.CursorDown, k.CollapseComments, k.ShowFullHelp, k.Quit}
-}
-
-func (k viewportKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.CursorUp, k.CursorDown, k.GoToStart, k.GoToEnd},
-		{k.CollapseComments, k.Quit, k.CloseFullHelp},
-	}
-}
 
 type CommentsViewport struct {
 	viewport      viewport.Model
@@ -61,45 +25,9 @@ type CommentsViewport struct {
 }
 
 func NewCommentsViewport() CommentsViewport {
-	keys := viewportKeyMap{
-		CursorUp: key.NewBinding(
-			key.WithKeys("up", "k"),
-			key.WithHelp("↑/k", "up"),
-		),
-		CursorDown: key.NewBinding(
-			key.WithKeys("down", "j"),
-			key.WithHelp("↓/j", "down"),
-		),
-		GoToStart: key.NewBinding(
-			key.WithKeys("home", "g"),
-			key.WithHelp("g/home", "go to start"),
-		),
-		GoToEnd: key.NewBinding(
-			key.WithKeys("end", "G"),
-			key.WithHelp("G/end", "go to end"),
-		),
-		CollapseComments: key.NewBinding(
-			key.WithKeys("c"),
-			key.WithHelp("c", "collapse comments"),
-		),
-		ShowFullHelp: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "more"),
-		),
-		CloseFullHelp: key.NewBinding(
-			key.WithKeys("?"),
-			key.WithHelp("?", "close help"),
-		),
-		Quit: key.NewBinding(
-			key.WithKeys("q", "esc"),
-			key.WithHelp("q", "quit"),
-		),
-		ForceQuit: key.NewBinding(key.WithKeys("ctrl+c")),
-	}
-
 	return CommentsViewport{
 		viewport:  viewport.New(0, 0),
-		keyMap:    keys,
+		keyMap:    commentsKeys,
 		help:      help.New(),
 		collapsed: false,
 	}

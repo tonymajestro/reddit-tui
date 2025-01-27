@@ -1,30 +1,27 @@
-package components
+package comments
 
 import (
 	"log"
 	"reddittui/client"
-	"reddittui/components/header"
+	"reddittui/components/common"
+	"reddittui/components/messages"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-type loadCommentsMsg client.Post
-
-type updateCommentsMsg client.Comments
-
 type CommentsPage struct {
 	redditClient client.RedditClient
-	header       header.CommentsHeader
+	header       CommentsHeader
 	pager        CommentsViewport
-	spinner      Spinner
+	spinner      common.Spinner
 	focus        bool
 	w, h         int
 }
 
 func NewCommentsPage() CommentsPage {
 	redditClient := client.New()
-	header := header.NewCommentsHeader()
+	header := NewCommentsHeader()
 	vp := NewCommentsViewport()
 
 	return CommentsPage{
@@ -69,7 +66,7 @@ func (c CommentsPage) Init() tea.Cmd {
 
 func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
 	switch msg := msg.(type) {
-	case updateCommentsMsg:
+	case messages.UpdateCommentsMsg:
 		c.UpdateComments(client.Comments(msg))
 		return c, nil
 	}
@@ -105,7 +102,7 @@ func (c *CommentsPage) LoadComments(url, title string) tea.Cmd {
 			log.Fatalf("Error: %v", err)
 		}
 
-		return updateCommentsMsg(comments)
+		return messages.UpdateCommentsMsg(comments)
 	}
 
 	return tea.Batch(loadCommentsCmd, c.spinner.Tick)

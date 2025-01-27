@@ -1,97 +1,46 @@
-package components
+package posts
 
 import (
 	"fmt"
 	"reddittui/client"
-	"reddittui/components/header"
+	"reddittui/components/common"
+	"reddittui/components/messages"
 	"reddittui/utils"
 
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var postsListStyle = lipgloss.NewStyle().MarginRight(4)
-
 const (
 	defaultHeaderTitle       = "reddit.com"
 	defaultHeaderDescription = "The front page of the internet"
 	defaultLoadingMessage    = "loading reddit.com..."
-	searchHelpText           = "Select a subreddit:"
-	searchPlaceholder        = "subreddit"
 )
-
-type (
-	loadHomeMsg    struct{}
-	updatePostsMsg client.Posts
-)
-
-type postsKeyMap struct {
-	Home   key.Binding
-	Search key.Binding
-	Back   key.Binding
-}
-
-func (k postsKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Home, k.Search}
-}
-
-func (k postsKeyMap) FullHelp() []key.Binding {
-	return []key.Binding{k.Home, k.Search, k.Back}
-}
 
 type PostsPage struct {
 	posts        []client.Post
 	redditClient client.RedditClient
-	header       header.PostsHeader
+	header       PostsHeader
 	list         list.Model
-	spinner      Spinner
-	search       SubredditSearch
+	spinner      common.Spinner
+	search       common.SubredditSearch
 	w, h         int
 	focus        bool
 	home         bool
 }
 
 func NewPostsPage() PostsPage {
-	keys := postsKeyMap{
-		Home: key.NewBinding(
-			key.WithKeys("H"),
-			key.WithHelp("H", "home")),
-		Search: key.NewBinding(
-			key.WithKeys("s"),
-			key.WithHelp("s", "subreddit search")),
-		Back: key.NewBinding(
-			key.WithKeys("bs"),
-			key.WithHelp("bs", "back")),
-	}
-
-	delegate := list.NewDefaultDelegate()
-	listStyle := delegate.Styles
-	listStyle.NormalTitle = listStyle.NormalTitle.Bold(false)
-	listStyle.SelectedTitle = listStyle.SelectedTitle.Bold(true)
-	delegate.Styles = listStyle
-	// delegate.Styles.SelectedTitle = lipgloss.NewStyle().
-	// 	Bold(true).
-	// 	Border(lipgloss.NormalBorder(), false, false, false, true).
-	// 	BorderForeground(colors.AdaptiveColor(colors.Blue)).
-	// 	Foreground(colors.AdaptiveColor(colors.Blue)).
-	// 	Padding(0, 0, 0, 1)
-	//
-	// delegate.Styles.SelectedDesc = delegate.Styles.SelectedTitle.
-	// 	Foreground(colors.AdaptiveColor(colors.Blue)).
-	// 	Faint(true)
-
-	items := list.New(nil, delegate, 0, 0)
+	items := list.New(nil, NewPostsDelegate(), 0, 0)
 	items.SetShowTitle(false)
 	items.SetShowStatusBar(false)
 	items.SetFilteringEnabled(false)
-	items.AdditionalShortHelpKeys = keys.ShortHelp
-	items.AdditionalFullHelpKeys = keys.FullHelp
+	items.AdditionalShortHelpKeys = postsKeys.ShortHelp
+	items.AdditionalFullHelpKeys = postsKeys.FullHelp
 
-	header := header.NewPostsHeader()
-	search := NewSubredditSearch()
-	spinner := NewSpinner()
+	header := NewPostsHeader()
+	search := common.NewSubredditSearch()
+	spinner := common.NewSpinner()
 
 	redditClient := client.New()
 
@@ -108,42 +57,42 @@ func NewPostsPage() PostsPage {
 
 func (p PostsPage) Init() tea.Cmd {
 	return tea.Batch(p.spinner.Init(), func() tea.Msg {
-		return loadHomeMsg{}
+		return messages.LoadHomeMsg{}
 	})
 }
 
 func (p PostsPage) Update(msg tea.Msg) (PostsPage, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	case loadHomeMsg:
+	case messages.LoadHomeMsg:
 		return p, p.LoadHome()
 
-	case updatePostsMsg:
-		p.UpdatePosts(client.Posts(msg))
+	case messages.UpdatePostsMsg:
+		p.updatePosts(client.Posts(msg))
 		return p, nil
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "esc":
 			if p.search.Searching {
-				p.HideSearch()
+				p.hideSearch()
 				return p, nil
 			}
 		case "enter":
 			if p.search.Searching {
-				p.HideSearch()
-				return p, GoSubreddit(p.search.Value())
+				p.hideSearch()
+				return p, messages.GoSubreddit(p.search.Value())
 			} else if !p.spinner.Loading {
 				loadCommentsCmd := func() tea.Msg {
 					post := p.posts[p.list.Index()]
-					return loadCommentsMsg(post)
+					return messages.LoadCommentsMsg(post)
 				}
 
 				return p, loadCommentsCmd
 			}
 		case "s", "S":
 			if !p.search.Searching && !p.spinner.Loading {
-				return p, p.ShowSearch()
+				return p, p.showSearch()
 			}
 		}
 	}
@@ -206,22 +155,22 @@ func (p *PostsPage) SetSize(w, h int) {
 	p.w = w
 	p.h = h
 
-	p.ResizeComponents()
+	p.resizeComponents()
 }
 
-func (p *PostsPage) ResizeComponents() {
+func (p *PostsPage) resizeComponents() {
 	p.header.SetSize(p.w, p.h)
 	p.resizeList()
 }
 
-func (p *PostsPage) ShowSearch() tea.Cmd {
+func (p *PostsPage) showSearch() tea.Cmd {
 	p.search.SetSearching(true)
 	p.resizeList()
 
 	return p.search.Focus()
 }
 
-func (p *PostsPage) HideSearch() {
+func (p *PostsPage) hideSearch() {
 	p.search.SetSearching(false)
 	p.resizeList()
 }
@@ -232,13 +181,13 @@ func (p *PostsPage) LoadHome() tea.Cmd {
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetHomePosts()
-		return updatePostsMsg(posts)
+		return messages.UpdatePostsMsg(posts)
 	}
 
 	return tea.Batch(getPostsCmd, p.spinner.Tick)
 }
 
-func (p *PostsPage) UpdatePosts(posts client.Posts) {
+func (p *PostsPage) updatePosts(posts client.Posts) {
 	p.spinner.SetLoading(false)
 
 	p.posts = posts.Posts
@@ -260,7 +209,7 @@ func (p *PostsPage) UpdatePosts(posts client.Posts) {
 	p.list.SetItems(listItems)
 
 	// Need to set size again when content loads so padding and margins are correct
-	p.ResizeComponents()
+	p.resizeComponents()
 }
 
 func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
@@ -269,7 +218,7 @@ func (p *PostsPage) LoadSubreddit(subreddit string) tea.Cmd {
 
 	getPostsCmd := func() tea.Msg {
 		posts, _ := p.redditClient.GetSubredditPosts(subreddit)
-		return updatePostsMsg(posts)
+		return messages.UpdatePostsMsg(posts)
 	}
 
 	return tea.Batch(getPostsCmd, p.spinner.Tick)
