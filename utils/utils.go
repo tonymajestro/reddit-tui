@@ -9,3 +9,13 @@ func NormalizeSubreddit(subreddit string) string {
 
 	return fmt.Sprintf("r/%s", subreddit)
 }
+
+func Clamp(min, max, val int) int {
+	if val < min {
+		return min
+	} else if val > max {
+		return max
+	}
+
+	return val
+}
