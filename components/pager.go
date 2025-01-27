@@ -137,6 +137,7 @@ func (c *CommentsViewport) SetSize(w, h int) {
 	c.h = h
 
 	c.ResizeComponents()
+	c.SetViewportContent()
 }
 
 func (c *CommentsViewport) SetContent(comments client.Comments) {
@@ -144,9 +145,8 @@ func (c *CommentsViewport) SetContent(comments client.Comments) {
 	c.comments = comments.Comments
 
 	c.collapsed = false
-	c.ResizeComponents()
 	c.viewport.SetYOffset(0)
-
+	c.ResizeComponents()
 	c.SetViewportContent()
 }
 
@@ -168,6 +168,7 @@ func (c *CommentsViewport) GetViewportView() string {
 	for i := range len(c.comments) - 1 {
 		comment := c.comments[i]
 		content.WriteString(c.formatComment(comment, i))
+		content.WriteString("\n\n")
 	}
 
 	return content.String()
@@ -182,12 +183,11 @@ func (c *CommentsViewport) SetViewportContent() {
 // Format comment, adding padding to the entry according to the comment's depth
 func (c *CommentsViewport) formatComment(comment client.Comment, i int) string {
 	var (
-		authorAndDateView      string
-		commentTextView        string
-		pointsView             string
-		pointsAndCollapsedView string
-		tabWidth               = comment.Depth * 2
-		commentWidth           = c.w - tabWidth
+		authorAndDateView          string
+		pointsView                 string
+		pointsAndCollapsedHintView string
+		paddingW                   = comment.Depth * 2
+		containerStyle             = lipgloss.NewStyle().PaddingLeft(paddingW).Width(c.w - paddingW)
 	)
 
 	if c.collapsed && comment.Depth > 0 {
@@ -196,13 +196,9 @@ func (c *CommentsViewport) formatComment(comment client.Comment, i int) string {
 
 	authorView := commentAuthorStyle.Render(comment.Author)
 	dateView := commentDateStyle.Render(comment.Timestamp)
-
-	authorAndDateView = formatLine(fmt.Sprintf("%s • %s", authorView, dateView), commentWidth, comment.Depth)
-	commentTextView = formatLine(commentTextStyle.Render(comment.Text), commentWidth, comment.Depth)
-
-	padding := strings.Repeat("  ", comment.Depth)
+	authorAndDateView = fmt.Sprintf("%s • %s", authorView, dateView)
 	pointsView = renderPoints(comment.Points)
-	pointsAndCollapsedView = fmt.Sprintf("%s%s", padding, pointsView)
+	pointsAndCollapsedHintView = pointsView
 
 	if c.collapsed {
 		children := 0
@@ -215,67 +211,16 @@ func (c *CommentsViewport) formatComment(comment client.Comment, i int) string {
 		}
 
 		if children == 1 {
-			collapsedView := collapsedStyle.Render("(1 comment hidden)")
-			pointsAndCollapsedView = fmt.Sprintf("%s%s  %s", padding, pointsView, collapsedView)
+			collapsedHintView := collapsedStyle.Render("(1 comment hidden)")
+			pointsAndCollapsedHintView = fmt.Sprintf("%s  %s", pointsView, collapsedHintView)
 		} else if children > 1 {
 			collapsedView := collapsedStyle.Render(fmt.Sprintf("(%d comments hidden)", children))
-			pointsAndCollapsedView = fmt.Sprintf("%s%s  %s", padding, pointsView, collapsedView)
+			pointsAndCollapsedHintView = fmt.Sprintf("%s  %s", pointsView, collapsedView)
 		}
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s\n\n", authorAndDateView, commentTextView, pointsAndCollapsedView)
-}
-
-// Format string according to padding and width rules.
-//
-// If the string is longer than 'width', it will be split into multiple lines that are
-// no more than 'width' wide. Each line will also have padded whitespace according to
-// the 'depth' argument.
-func formatLine(s string, width, depth int) string {
-	var (
-		lines   strings.Builder
-		lineW   = depth
-		padding = strings.Repeat("  ", depth)
-	)
-
-	lines.WriteString(padding)
-
-	for _, word := range strings.Fields(s) {
-		runes := []rune(word)
-
-		if lineW+len(runes) > width {
-			// Word doesn't fit on current line.
-			// Add linebreak and padding and write word to next line
-
-			if lineW > depth {
-				lines.WriteRune('\n')
-				lines.WriteString(padding)
-				lines.WriteString(word)
-				lineW = depth + len(runes)
-			} else {
-				// Edge case where first word on line doesn't fit
-				// Hack: assume the word will fit on two lines
-				// To-do: split the word into the correct number of lines
-
-				left, right := runes[:width-depth], runes[width-depth:]
-
-				lines.WriteString(string(left))
-				lines.WriteString("-\n")
-				lines.WriteString(padding)
-				lines.WriteString(string(right))
-				lines.WriteRune(' ')
-
-				lineW = depth + len(right) + 1
-			}
-		} else {
-			// Word fits on current line, write it to buffer
-			lines.WriteString(word)
-			lines.WriteRune(' ')
-			lineW += len(runes) + 1
-		}
-	}
-
-	return lines.String()
+	joined := lipgloss.JoinVertical(lipgloss.Left, authorAndDateView, comment.Text, pointsAndCollapsedHintView)
+	return containerStyle.Render(joined)
 }
 
 func renderPoints(pointsString string) string {
@@ -301,7 +246,7 @@ func renderPoints(pointsString string) string {
 }
 
 func (c *CommentsViewport) toggleCollapseComments() {
-	pos, title, text := c.findAnchor()
+	pos, title, text := c.findAnchorComment()
 	offset := pos - c.viewport.YOffset
 
 	c.collapsed = !c.collapsed
@@ -313,7 +258,7 @@ func (c *CommentsViewport) toggleCollapseComments() {
 
 // Find comment closest to the center of the screen to act as an anchor when toggling
 // child comments.
-func (c *CommentsViewport) findAnchor() (int, string, string) {
+func (c *CommentsViewport) findAnchorComment() (int, string, string) {
 	// Don't use actual center of viewport since the header takes up some amount of space and
 	// users probably look closer to the top of the screen rather than the bottom
 	midPoint := c.viewport.YOffset + int(float64(c.viewport.Height)*0.4)
