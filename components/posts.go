@@ -66,7 +66,23 @@ func NewPostsPage() PostsPage {
 			key.WithHelp("bs", "back")),
 	}
 
-	items := list.New(nil, list.NewDefaultDelegate(), 0, 0)
+	delegate := list.NewDefaultDelegate()
+	listStyle := delegate.Styles
+	listStyle.NormalTitle = listStyle.NormalTitle.Bold(false)
+	listStyle.SelectedTitle = listStyle.SelectedTitle.Bold(true)
+	delegate.Styles = listStyle
+	// delegate.Styles.SelectedTitle = lipgloss.NewStyle().
+	// 	Bold(true).
+	// 	Border(lipgloss.NormalBorder(), false, false, false, true).
+	// 	BorderForeground(colors.AdaptiveColor(colors.Blue)).
+	// 	Foreground(colors.AdaptiveColor(colors.Blue)).
+	// 	Padding(0, 0, 0, 1)
+	//
+	// delegate.Styles.SelectedDesc = delegate.Styles.SelectedTitle.
+	// 	Foreground(colors.AdaptiveColor(colors.Blue)).
+	// 	Faint(true)
+
+	items := list.New(nil, delegate, 0, 0)
 	items.SetShowTitle(false)
 	items.SetShowStatusBar(false)
 	items.SetFilteringEnabled(false)

@@ -11,7 +11,7 @@ import (
 
 var (
 	postAuthorStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue))
-	postPointsStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Green))
+	postPointsStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Purple))
 	postTextStyle      = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Sand))
 	postTimestampStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Text)).Faint(true)
 )
