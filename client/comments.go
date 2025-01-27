@@ -143,13 +143,7 @@ func parseCommentNode(node HtmlNode, depth int, comments []Comment) []Comment {
 	}
 
 	if usertextNode, ok := node.FindChild("form", "usertext"); ok {
-		var usertext strings.Builder
-		for n := range usertextNode.FindDescendants("p") {
-			usertext.WriteString(n.Text())
-			usertext.WriteRune(' ')
-		}
-
-		comment.Text = usertext.String()
+		comment.Text = strings.TrimSpace(getBlockHtml(usertextNode))
 	}
 
 	comments = append(comments, comment)
@@ -169,10 +163,8 @@ func getTitle(root HtmlNode) string {
 func getPostText(root HtmlNode) string {
 	if linkListingNode, ok := root.FindDescendant("div", "sitetable", "linklisting"); ok {
 		if mdNode, ok := linkListingNode.FindDescendant("div", "md"); ok {
-			var postText strings.Builder
-			getPostTextHelper(mdNode, &postText)
-
-			return postTextTrimRegex.ReplaceAllString(postText.String(), "\n\n")
+			postText := getBlockHtml(mdNode)
+			return postTextTrimRegex.ReplaceAllString(postText, "\n\n")
 		}
 	}
 
@@ -199,14 +191,17 @@ func getPostTimestamp(root HtmlNode) string {
 	return ""
 }
 
-func getPostTextHelper(node HtmlNode, postText *strings.Builder) {
+func getBlockHtml(node HtmlNode) string {
+	var content strings.Builder
 	for child := range node.ChildNodes() {
 		cNode := HtmlNode{child}
 
 		var blockText strings.Builder
 		collectBlockText(cNode, &blockText)
-		postText.WriteString(strings.TrimSpace(blockText.String()) + "\n")
+		content.WriteString(strings.TrimSpace(blockText.String()) + "\n")
 	}
+
+	return content.String()
 }
 
 func collectBlockText(blockNode HtmlNode, blockText *strings.Builder) {

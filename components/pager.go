@@ -167,8 +167,11 @@ func (c *CommentsViewport) GetViewportView() string {
 
 	for i := range len(c.comments) - 1 {
 		comment := c.comments[i]
-		content.WriteString(c.formatComment(comment, i))
-		content.WriteString("\n\n")
+		commentView := c.formatComment(comment, i)
+		if len(commentView) > 0 {
+			content.WriteString(commentView)
+			content.WriteString("\n\n")
+		}
 	}
 
 	return content.String()
