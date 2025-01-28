@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -12,49 +11,6 @@ import (
 
 type RedditPostsClient struct {
 	client *http.Client
-}
-
-type Post struct {
-	PostTitle     string
-	Author        string
-	Subreddit     string
-	FriendlyDate  string
-	PostUrl       string
-	CommentsUrl   string
-	TotalComments string
-	TotalLikes    string
-}
-
-type Posts struct {
-	Description string
-	Subreddit   string
-	IsHome      bool
-	Posts       []Post
-}
-
-func (p Post) Title() string {
-	return fmt.Sprintf(" %s  %s", p.TotalLikes, p.PostTitle)
-}
-
-func (p Post) Description() string {
-	var sb strings.Builder
-	if strings.TrimSpace(p.Subreddit) != "" {
-		sb.WriteString(p.Subreddit)
-		sb.WriteString("  ")
-	}
-
-	if strings.TrimSpace(p.TotalComments) == "" {
-		fmt.Fprintf(&sb, "%d comments  ", 0)
-	} else {
-		fmt.Fprintf(&sb, "%s comments  ", p.TotalComments)
-	}
-
-	fmt.Fprintf(&sb, "submitted %s by %s", p.FriendlyDate, p.Author)
-	return sb.String()
-}
-
-func (p Post) FilterValue() string {
-	return p.PostTitle
 }
 
 func (r RedditPostsClient) GetHomePosts() (Posts, error) {

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -13,39 +12,6 @@ var postTextTrimRegex = regexp.MustCompile("\n\n\n+")
 
 type RedditCommentsClient struct {
 	client *http.Client
-}
-
-type Comment struct {
-	Author    string
-	Text      string
-	Points    string
-	Timestamp string
-	Children  []*Comment
-	Hidden    bool
-	Depth     int
-}
-
-type Comments struct {
-	PostTitle     string
-	PostAuthor    string
-	Subreddit     string
-	PostPoints    string
-	PostText      string
-	PostTimestamp string
-	Comments      []Comment
-}
-
-func (c Comment) Title() string {
-	return formatDepth(c.Text, c.Depth)
-}
-
-func (c Comment) Description() string {
-	desc := fmt.Sprintf("%s  by %s  %s", c.Points, c.Author, c.Timestamp)
-	return formatDepth(desc, c.Depth)
-}
-
-func (c Comment) FilterValue() string {
-	return c.Author
 }
 
 func (r RedditCommentsClient) GetComments(url string) (Comments, error) {
