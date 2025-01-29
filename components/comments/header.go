@@ -3,10 +3,24 @@ package comments
 import (
 	"fmt"
 	"reddittui/client"
-	"reddittui/components/header"
+	"reddittui/components/colors"
 	"reddittui/utils"
 
 	"github.com/charmbracelet/lipgloss"
+)
+
+var (
+	headerContainerStyle = lipgloss.NewStyle().MarginBottom(2)
+	titleStyle           = lipgloss.NewStyle().
+				MarginBottom(1).
+				Padding(0, 2).
+				Height(1).
+				Background(colors.AdaptiveColors(colors.Blue, colors.Indigo)).
+				Foreground(colors.AdaptiveColors(colors.White, colors.Sand))
+
+	defaultDescriptionStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(colors.AdaptiveColor(colors.Text))
 )
 
 type CommentsHeader struct {
@@ -20,16 +34,16 @@ type CommentsHeader struct {
 }
 
 func NewCommentsHeader() CommentsHeader {
-	return CommentsHeader{DescriptionStyle: header.DefaultDescriptionStyle}
+	return CommentsHeader{DescriptionStyle: defaultDescriptionStyle}
 }
 
 func (h *CommentsHeader) SetSize(width, height int) {
-	h.W = width - header.HeaderContainerStyle.GetHorizontalFrameSize()
+	h.W = width - headerContainerStyle.GetHorizontalFrameSize()
 	h.DescriptionStyle = h.DescriptionStyle.Width(h.W)
 }
 
 func (h CommentsHeader) View() string {
-	titleView := header.TitleStyle.Render(utils.TruncateString(h.Title, h.W))
+	titleView := titleStyle.Render(utils.TruncateString(h.Title, h.W))
 	descriptionView := h.DescriptionStyle.Render(h.Description)
 
 	authorView := postAuthorStyle.Render(h.Author)
@@ -39,7 +53,7 @@ func (h CommentsHeader) View() string {
 	postPointsView := postPointsStyle.Render(fmt.Sprintf("%s points", h.Points))
 	joinedView := lipgloss.JoinVertical(lipgloss.Left, titleView, descriptionView, authorTimestampView, postPointsView)
 
-	return header.HeaderContainerStyle.Render(joinedView)
+	return headerContainerStyle.Render(joinedView)
 }
 
 func (h *CommentsHeader) SetContent(comments client.Comments) {
