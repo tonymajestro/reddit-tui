@@ -1,169 +1,215 @@
 package components
 
 import (
+	"fmt"
+	"os"
+	"reddittui/client"
 	"reddittui/components/comments"
-	"reddittui/components/common"
 	"reddittui/components/messages"
+	"reddittui/components/modal"
 	"reddittui/components/posts"
+	"reddittui/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
-var appStyle = lipgloss.NewStyle().Padding(1, 2)
+const defaultLoadingMessage = "loading reddit.com..."
+
+type (
+	pageType int
+)
+
+const (
+	HomePage pageType = iota
+	SubredditPage
+	CommentsPage
+)
 
 type RedditTui struct {
-	postsPage    posts.PostsPage
-	commentsPage comments.CommentsPage
-	quitPage     common.QuitPage
-	focusStack   FocusStack
+	homePage      posts.PostsPage
+	subredditPage posts.PostsPage
+	commentsPage  comments.CommentsPage
+	modalManager  modal.ModalManager
+	popup         bool
+	initializing  bool
+	page          pageType
+	prevPage      pageType
+	loadingPage   pageType
+	f             *os.File
 }
 
 func NewRedditTui() RedditTui {
-	postsPage := posts.NewPostsPage()
-	commentsPage := comments.NewCommentsPage()
-	quitPage := common.NewQuitPage()
+	redditClient := client.New()
 
-	postsPage.Focus()
-	commentsPage.Blur()
+	homePage := posts.NewPostsPage(redditClient, true)
+	subredditPage := posts.NewPostsPage(redditClient, false)
+	commentsPage := comments.NewCommentsPage(redditClient)
 
-	focusStack := FocusStack{Home}
+	modalManager := modal.NewModalManager()
 
 	return RedditTui{
-		postsPage:    postsPage,
-		commentsPage: commentsPage,
-		quitPage:     quitPage,
-		focusStack:   focusStack,
+		homePage:      homePage,
+		subredditPage: subredditPage,
+		commentsPage:  commentsPage,
+		modalManager:  modalManager,
+		initializing:  true,
 	}
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	// return r.postsPage.Init()
-	return messages.GoSubreddit("neovim")
+	return messages.LoadHome
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		cmds []tea.Cmd
+		cmd  tea.Cmd
+	)
+
 	switch msg := msg.(type) {
+	case messages.OpenModalMsg:
+		r.openModal()
+		return r, nil
+
+	case messages.LoadingCompleteMsg:
+		r.popup = false
+		r.setPage(r.loadingPage)
+		r.focusActivePage()
+		r.modalManager.Blur()
+		fmt.Fprint(r.f, "loading complete from tui\n")
+		fmt.Fprintf(r.f, "prev: %d, curr: %d, loading: %d\n", r.prevPage, r.page, r.loadingPage)
+		return r, nil
+
+	case messages.ExitModalMsg:
+		r.popup = false
+		r.focusActivePage()
+		r.modalManager.Blur()
+		return r, nil
 
 	case messages.GoBackMsg:
-		if len(r.focusStack) == 1 {
+		r.goBack()
+		return r, nil
+
+	case messages.LoadHomeMsg:
+		if r.page == HomePage && !r.initializing {
 			return r, nil
 		}
 
-		prevPage := r.focusStack.Pop()
+		r.initializing = false
+		r.loadingPage = HomePage
+		cmds = append(cmds, messages.ShowSpinnerModal(defaultLoadingMessage))
 
-		switch r.focusStack.Peek() {
-		case Home:
-			r.Focus(Home)
-
-			if prevPage == Quit || prevPage == Comments {
-				return r, nil
-			} else {
-				return r, messages.GoHome
-			}
-
-		case Subreddit:
-			r.Focus(Subreddit)
+	case messages.LoadSubredditMsg:
+		subreddit := string(msg)
+		if r.page == SubredditPage && r.subredditPage.Subreddit == subreddit {
 			return r, nil
-
-		case Comments:
-			r.Focus(Comments)
-			return r, nil
-
-		default:
-			return r, tea.Quit
 		}
+
+		r.loadingPage = SubredditPage
+		loadingMsg := fmt.Sprintf("loading %s...", utils.NormalizeSubreddit(subreddit))
+		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
 
 	case messages.LoadCommentsMsg:
-		r.Focus(Comments)
-		r.focusStack.Push(Comments)
+		r.loadingPage = CommentsPage
+		loadingMsg := "loading comments..."
+		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
 
-		return r, r.commentsPage.LoadComments(msg.CommentsUrl, msg.PostTitle)
-
-	case messages.GoHomeMsg:
-		r.Focus(Home)
-		r.focusStack.Clear()
-		r.focusStack.Push(Home)
-		return r, r.postsPage.LoadHome()
-
-	case messages.GoSubredditMsg:
-		r.Focus(Subreddit)
-		r.focusStack.Push(Subreddit)
-		return r, r.postsPage.LoadSubreddit(string(msg))
+	case tea.WindowSizeMsg:
+		r.homePage.SetSize(msg.Width, msg.Height)
+		r.subredditPage.SetSize(msg.Width, msg.Height)
+		r.commentsPage.SetSize(msg.Width, msg.Height)
+		r.modalManager.SetSize(msg.Width, msg.Height)
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc", "q":
-			if !r.quitPage.IsFocused() && !r.postsPage.IsSearching() {
-				r.PromptQuit()
-				return r, nil
-			}
 		case "ctrl+c":
 			return r, tea.Quit
-
-		case "H":
-			if r.focusStack.Peek() == Home {
-				return r, nil
-			} else if !r.quitPage.IsFocused() && !r.postsPage.IsSearching() {
-				return r, messages.GoHome
-			}
-
-		case "backspace":
-			if r.CanGoBack() {
-				return r, messages.GoBack
-			}
 		}
-
-	case tea.WindowSizeMsg:
-		h, v := appStyle.GetFrameSize()
-		newW, newH := msg.Width-h, msg.Height-v
-		r.postsPage.SetSize(newW, newH)
-		r.commentsPage.SetSize(newW, newH)
 	}
 
-	var cmd tea.Cmd
-	if r.postsPage.IsFocused() {
-		r.postsPage, cmd = r.postsPage.Update(msg)
-		return r, cmd
-	} else if r.commentsPage.IsFocused() {
-		r.commentsPage, cmd = r.commentsPage.Update(msg)
-		return r, cmd
-	} else {
-		r.quitPage, cmd = r.quitPage.Update(msg)
-		return r, cmd
-	}
+	r.modalManager, cmd = r.modalManager.Update(msg)
+	cmds = append(cmds, cmd)
+
+	r.homePage, cmd = r.homePage.Update(msg)
+	cmds = append(cmds, cmd)
+
+	r.subredditPage, cmd = r.subredditPage.Update(msg)
+	cmds = append(cmds, cmd)
+
+	r.commentsPage, cmd = r.commentsPage.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return r, tea.Batch(cmds...)
 }
 
 func (r RedditTui) View() string {
-	if r.postsPage.IsFocused() {
-		return appStyle.Render(r.postsPage.View())
-	} else if r.commentsPage.IsFocused() {
-		return appStyle.Render(r.commentsPage.View())
-	} else {
-		return appStyle.Render(r.quitPage.View())
+	if r.popup {
+		switch r.page {
+		case HomePage:
+			return r.modalManager.View(r.homePage)
+		case SubredditPage:
+			return r.modalManager.View(r.subredditPage)
+		case CommentsPage:
+			return r.modalManager.View(r.commentsPage)
+		}
 	}
+
+	switch r.page {
+	case HomePage:
+		return r.homePage.View()
+	case SubredditPage:
+		return r.subredditPage.View()
+	case CommentsPage:
+		return r.commentsPage.View()
+	}
+
+	panic("Unexpected page")
 }
 
-func (r *RedditTui) Focus(page PageType) {
-	r.quitPage.Blur()
-	r.postsPage.Blur()
+func (r *RedditTui) goBack() {
+	fmt.Fprintf(r.f, "prev: %d, curr: %d, loading: %d\n", r.prevPage, r.page, r.loadingPage)
+
+	switch r.page {
+	case CommentsPage:
+		if r.prevPage == HomePage {
+			r.setPage(HomePage)
+		} else {
+			r.setPage(SubredditPage)
+		}
+	default:
+		r.setPage(HomePage)
+	}
+
+	fmt.Fprintf(r.f, "going back...\n")
+	fmt.Fprintf(r.f, "prev: %d, curr: %d\n", r.prevPage, r.page)
+
+	r.focusActivePage()
+}
+
+func (r *RedditTui) setPage(page pageType) {
+	r.page, r.prevPage = page, r.page
+}
+
+func (r *RedditTui) openModal() {
+	r.popup = true
+	r.homePage.Blur()
+	r.subredditPage.Blur()
 	r.commentsPage.Blur()
+}
 
-	switch page {
-	case Home, Subreddit:
-		r.postsPage.Focus()
-	case Comments:
+func (r *RedditTui) focusActivePage() {
+	switch r.page {
+	case HomePage:
+		r.homePage.Focus()
+		r.subredditPage.Blur()
+		r.commentsPage.Blur()
+	case SubredditPage:
+		r.homePage.Blur()
+		r.subredditPage.Focus()
+		r.commentsPage.Blur()
+	case CommentsPage:
+		r.homePage.Blur()
+		r.subredditPage.Blur()
 		r.commentsPage.Focus()
-	case Quit:
-		r.quitPage.Focus()
 	}
-}
-
-func (r *RedditTui) PromptQuit() {
-	r.Focus(Quit)
-	r.focusStack.Push(Quit)
-}
-
-func (r *RedditTui) CanGoBack() bool {
-	return !r.quitPage.IsFocused() && (!r.postsPage.IsFocused() || !r.postsPage.IsSearching())
 }

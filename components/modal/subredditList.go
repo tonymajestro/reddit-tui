@@ -1,4 +1,4 @@
-package common
+package modal
 
 var subredditSuggestions = []string{
 	"15minutefood",

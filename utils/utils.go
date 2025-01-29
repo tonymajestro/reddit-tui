@@ -11,7 +11,9 @@ func NormalizeSubreddit(subreddit string) string {
 }
 
 func TruncateString(s string, w int) string {
-	if len(s) <= w {
+	if w <= 0 {
+		return s
+	} else if len(s) <= w || len(s) <= 3 {
 		return s
 	}
 

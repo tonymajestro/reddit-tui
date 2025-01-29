@@ -45,7 +45,7 @@ func (h PostsHeader) View() string {
 	return headerContainerStyle.Render(joinedView)
 }
 
-func (h *PostsHeader) SetContent(subreddit, postTitle string) {
-	h.Title = utils.NormalizeSubreddit(subreddit)
-	h.Description = postTitle
+func (h *PostsHeader) SetContent(title, desc string) {
+	h.Title = utils.NormalizeSubreddit(title)
+	h.Description = desc
 }

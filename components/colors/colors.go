@@ -103,6 +103,7 @@ var Light = Palette{
 	Green:    "#40a02b",
 	Blue:     "#1e66f5",
 	Purple:   "#8839ef",
+	Indigo:   "#5f5fd7 ",
 	Lavender: "#7287fd",
 	Text:     "#4c4f69",
 	Subtext:  "#5c5f77",
