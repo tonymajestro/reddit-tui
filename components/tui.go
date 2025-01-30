@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"os"
 	"reddittui/client"
 	"reddittui/components/comments"
 	"reddittui/components/messages"
@@ -35,7 +34,6 @@ type RedditTui struct {
 	page          pageType
 	prevPage      pageType
 	loadingPage   pageType
-	f             *os.File
 }
 
 func NewRedditTui() RedditTui {
@@ -76,8 +74,6 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.setPage(r.loadingPage)
 		r.focusActivePage()
 		r.modalManager.Blur()
-		fmt.Fprint(r.f, "loading complete from tui\n")
-		fmt.Fprintf(r.f, "prev: %d, curr: %d, loading: %d\n", r.prevPage, r.page, r.loadingPage)
 		return r, nil
 
 	case messages.ExitModalMsg:
@@ -167,8 +163,6 @@ func (r RedditTui) View() string {
 }
 
 func (r *RedditTui) goBack() {
-	fmt.Fprintf(r.f, "prev: %d, curr: %d, loading: %d\n", r.prevPage, r.page, r.loadingPage)
-
 	switch r.page {
 	case CommentsPage:
 		if r.prevPage == HomePage {
@@ -179,9 +173,6 @@ func (r *RedditTui) goBack() {
 	default:
 		r.setPage(HomePage)
 	}
-
-	fmt.Fprintf(r.f, "going back...\n")
-	fmt.Fprintf(r.f, "prev: %d, curr: %d\n", r.prevPage, r.page)
 
 	r.focusActivePage()
 }
