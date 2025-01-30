@@ -57,7 +57,7 @@ func NewRedditTui() RedditTui {
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	return messages.LoadHome
+	return messages.LoadSubreddit("neovim")
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
