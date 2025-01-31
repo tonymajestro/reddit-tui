@@ -5,6 +5,7 @@ import (
 	"reddittui/client"
 	"reddittui/components/colors"
 	"reddittui/utils"
+	"strconv"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -29,7 +30,8 @@ type CommentsHeader struct {
 	Description      string
 	Author           string
 	Timestamp        string
-	Points           string
+	Points           int
+	TotalComments    int
 	W                int
 }
 
@@ -50,8 +52,11 @@ func (h CommentsHeader) View() string {
 	timestampView := postTimestampStyle.Render(fmt.Sprintf("submitted %s by", h.Timestamp))
 	authorTimestampView := fmt.Sprintf("%s %s", timestampView, authorView)
 
-	postPointsView := postPointsStyle.Render(fmt.Sprintf("%s points", h.Points))
-	joinedView := lipgloss.JoinVertical(lipgloss.Left, titleView, descriptionView, authorTimestampView, postPointsView)
+	postPointsView := postPointsStyle.Render(utils.GetSingularPlural(h.Points, "point", "points"))
+	totalCommentsView := totalCommentsStyle.Render(utils.GetSingularPlural(h.TotalComments, "comment", "comments"))
+	pointsAndCommentsView := fmt.Sprintf("%s • %s", postPointsView, totalCommentsView)
+
+	joinedView := lipgloss.JoinVertical(lipgloss.Left, titleView, descriptionView, authorTimestampView, pointsAndCommentsView)
 
 	return headerContainerStyle.Render(joinedView)
 }
@@ -60,6 +65,12 @@ func (h *CommentsHeader) SetContent(comments client.Comments) {
 	h.Title = utils.NormalizeSubreddit(comments.Subreddit)
 	h.Description = comments.PostTitle
 	h.Author = comments.PostAuthor
-	h.Points = comments.PostPoints
+	h.TotalComments = len(comments.Comments)
 	h.Timestamp = comments.PostTimestamp
+
+	if points, err := strconv.Atoi(comments.PostPoints); err != nil {
+		h.Points = 0
+	} else {
+		h.Points = points
+	}
 }

@@ -1,6 +1,8 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func NormalizeSubreddit(subreddit string) string {
 	if len(subreddit) >= 2 && subreddit[:2] == "r/" {
@@ -28,4 +30,12 @@ func Clamp(min, max, val int) int {
 	}
 
 	return val
+}
+
+func GetSingularPlural(i int, singular, plural string) string {
+	if i == 1 {
+		return fmt.Sprintf("%d %s", i, singular)
+	}
+
+	return fmt.Sprintf("%d %s", i, plural)
 }
