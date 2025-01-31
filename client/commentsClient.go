@@ -1,12 +1,15 @@
 package client
 
 import (
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
 )
+
+const limitQueryParameter = "limit=500"
 
 var postTextTrimRegex = regexp.MustCompile("\n\n\n+")
 
@@ -17,6 +20,7 @@ type RedditCommentsClient struct {
 func (r RedditCommentsClient) GetComments(url string) (Comments, error) {
 	var comments Comments
 
+	url = addQueryParameter(url, limitQueryParameter)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return comments, err
@@ -219,4 +223,12 @@ func formatDepth(s string, depth int) string {
 	sb.WriteString(s)
 
 	return sb.String()
+}
+
+func addQueryParameter(url, query string) string {
+	if strings.Contains(url, "?") {
+		return fmt.Sprintf("%s&%s", url, query)
+	}
+
+	return fmt.Sprintf("%s?%s", url, query)
 }
