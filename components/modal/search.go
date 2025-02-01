@@ -12,7 +12,7 @@ import (
 const (
 	searchHelpText     = "Choose a subreddit:"
 	searchPlaceholder  = "subreddit"
-	defaultSearchWidth = 40
+	defaultSearchWidth = 35
 )
 
 var (

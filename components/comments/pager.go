@@ -2,6 +2,7 @@ package comments
 
 import (
 	"fmt"
+	"log/slog"
 	"reddittui/client"
 	"strconv"
 	"strings"
@@ -93,7 +94,7 @@ func (c *CommentsViewport) GetViewportView() string {
 		content.WriteString("\n")
 	}
 
-	for i := range len(c.comments) - 1 {
+	for i := range len(c.comments) {
 		comment := c.comments[i]
 		commentView := c.formatComment(comment, i)
 		if len(commentView) > 0 {
@@ -122,6 +123,7 @@ func (c *CommentsViewport) formatComment(comment client.Comment, i int) string {
 	)
 
 	if c.collapsed && comment.Depth > 0 {
+		slog.Info("Collapsed, exiting...")
 		return ""
 	}
 

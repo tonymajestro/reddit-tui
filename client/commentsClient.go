@@ -1,15 +1,12 @@
 package client
 
 import (
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
 )
-
-const limitQueryParameter = "limit=500"
 
 var postTextTrimRegex = regexp.MustCompile("\n\n\n+")
 
@@ -76,7 +73,7 @@ func createCommentsList(node HtmlNode, depth int, comments []Comment) []Comment 
 			continue
 		}
 
-		entryNode, ok := c.FindChild("div", "entry", "unvoted")
+		entryNode, ok := c.FindChild("div", "entry")
 		if !ok {
 			continue
 		}
@@ -168,20 +165,25 @@ func getBlockHtml(node HtmlNode) string {
 
 		var blockText strings.Builder
 		collectBlockText(cNode, &blockText)
-		content.WriteString(strings.TrimSpace(blockText.String()) + "\n")
+		content.WriteString(blockText.String())
+		content.WriteString("\n")
 	}
 
 	return content.String()
 }
 
-func collectBlockText(blockNode HtmlNode, blockText *strings.Builder) {
-	if blockNode.Type == html.TextNode {
-		blockText.WriteString(blockNode.Data)
-	} else if blockNode.Tag() == "li" || blockNode.Tag() == "ol" {
-		blockText.WriteString("- ")
+func collectBlockText(node HtmlNode, blockText *strings.Builder) {
+	if node.Type == html.TextNode {
+		blockText.WriteString(node.Data)
+	} else if node.Tag() == "a" {
+		blockText.WriteString(renderAnchor(node))
+		return
+	} else if node.Tag() == "li" {
+		blockText.WriteString(node.Text())
+		return
 	}
 
-	for child := range blockNode.ChildNodes() {
+	for child := range node.ChildNodes() {
 		collectBlockText(HtmlNode{child}, blockText)
 	}
 }
@@ -223,12 +225,4 @@ func formatDepth(s string, depth int) string {
 	sb.WriteString(s)
 
 	return sb.String()
-}
-
-func addQueryParameter(url, query string) string {
-	if strings.Contains(url, "?") {
-		return fmt.Sprintf("%s&%s", url, query)
-	}
-
-	return fmt.Sprintf("%s?%s", url, query)
 }

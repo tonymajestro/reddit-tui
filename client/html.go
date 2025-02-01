@@ -1,12 +1,20 @@
 package client
 
 import (
+	"fmt"
 	"iter"
+	"log/slog"
+	"reddittui/components/colors"
 	"slices"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/net/html"
 )
+
+var hyperLinkStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
+
+const limitQueryParameter = "limit=500"
 
 type HtmlNode struct {
 	*html.Node
@@ -50,7 +58,7 @@ func (n HtmlNode) ClassContains(classesToFind ...string) bool {
 }
 
 func (n HtmlNode) Text() string {
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
+	for c := range n.ChildNodes() {
 		if c.Type == html.TextNode {
 			return c.Data
 		}
@@ -135,4 +143,32 @@ func (n HtmlNode) FindChildren(tag string, classes ...string) iter.Seq[HtmlNode]
 			}
 		}
 	}
+}
+
+func renderAnchor(node HtmlNode) string {
+	var (
+		url      = node.GetAttr("href")
+		linkText = node.Text()
+	)
+
+	if !strings.HasPrefix(url, "http") && !strings.HasPrefix(url, "www") {
+		slog.Info("Not http")
+		return hyperLinkStyle.Render(linkText)
+	} else if url == linkText {
+		slog.Info("url equals link text")
+		return hyperLinkStyle.Render(linkText)
+	}
+
+	return fmt.Sprintf(
+		"%s %s",
+		linkText,
+		hyperLinkStyle.Render(url))
+}
+
+func addQueryParameter(url, query string) string {
+	if strings.Contains(url, "?") {
+		return fmt.Sprintf("%s&%s", url, query)
+	}
+
+	return fmt.Sprintf("%s?%s", url, query)
 }
