@@ -1,9 +1,7 @@
 package client
 
 import (
-	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -31,31 +29,23 @@ func (r RedditPostsClient) GetSubredditPosts(subreddit string) (Posts, error) {
 }
 
 func (r RedditPostsClient) getPosts(url string) (Posts, error) {
-	var (
-		reader io.Reader
-		posts  Posts
-	)
+	var posts Posts
 
-	if url == homeUrl && debug {
-		reader, _ = os.Open("samples/home.html")
-	} else {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return posts, err
-		}
-
-		req.Header.Add(userAgentKey, userAgentValue)
-
-		res, err := r.client.Do(req)
-		if err != nil {
-			return posts, err
-		}
-
-		defer res.Body.Close()
-		reader = res.Body
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return posts, err
 	}
 
-	doc, err := html.Parse(reader)
+	req.Header.Add(userAgentKey, userAgentValue)
+
+	res, err := r.client.Do(req)
+	if err != nil {
+		return posts, err
+	}
+
+	defer res.Body.Close()
+
+	doc, err := html.Parse(res.Body)
 	if err != nil {
 		return posts, err
 	}

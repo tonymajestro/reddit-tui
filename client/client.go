@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-var debug = false
-
 const (
 	homeUrl        = "https://old.reddit.com"
 	subredditUrl   = "https://old.reddit.com/r/"

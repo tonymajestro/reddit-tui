@@ -1,7 +1,8 @@
 package comments
 
 import (
-	"log"
+	"log/slog"
+	"os"
 	"reddittui/client"
 	"reddittui/components/messages"
 	"reddittui/components/styles"
@@ -112,9 +113,11 @@ func (c *CommentsPage) resizeComponents() {
 
 func (c *CommentsPage) loadComments(url string) tea.Cmd {
 	return func() tea.Msg {
+		slog.Info("Loading comments page", "url", url)
 		comments, err := c.redditClient.GetComments(url)
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("Error loading comments page", "url", url, "error", err)
+			os.Exit(1)
 		}
 
 		return messages.UpdateCommentsMsg(comments)

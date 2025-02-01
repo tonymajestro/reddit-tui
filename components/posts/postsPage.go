@@ -1,8 +1,7 @@
 package posts
 
 import (
-	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"reddittui/client"
 	"reddittui/components/messages"
@@ -166,9 +165,11 @@ func (p *PostsPage) resizeComponents() {
 
 func (p *PostsPage) loadHome() tea.Cmd {
 	return func() tea.Msg {
+		slog.Info("Loading home page posts", "subreddit", "reddit.com")
 		posts, err := p.redditClient.GetHomePosts()
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("Error loading home page posts", "error", err)
+			os.Exit(1)
 		}
 		return messages.UpdatePostsMsg(posts)
 	}
@@ -177,11 +178,11 @@ func (p *PostsPage) loadHome() tea.Cmd {
 func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
 	p.Subreddit = subreddit
 	return func() tea.Msg {
+		slog.Info("Loading subreddit page posts", "subreddit", subreddit)
 		posts, err := p.redditClient.GetSubredditPosts(subreddit)
 		if err != nil {
-			f, _ := os.Create("debug.log")
-			fmt.Fprintf(f, "Error loading subreddit: %v\n", err)
-			log.Fatal(err)
+			slog.Error("Error loading home page posts", "error", err)
+			os.Exit(1)
 		}
 		return messages.UpdatePostsMsg(posts)
 	}
