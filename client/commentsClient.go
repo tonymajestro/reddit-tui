@@ -1,28 +1,14 @@
 package client
 
 import (
-	"fmt"
 	"net/http"
-	"reddittui/components/colors"
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/net/html"
 )
 
-const (
-	limitQueryParameter = "limit=500"
-
-	hyperLinkStartSequence     = "\x1B]8;;"
-	hyperLinkSeparatorSequence = "\x1B\\"
-	hyperLinkEndSequence       = "\x1B]8;;\x1B\\"
-)
-
-var (
-	postTextTrimRegex = regexp.MustCompile("\n\n\n+")
-	hyperlinkStyle    = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
-)
+var postTextTrimRegex = regexp.MustCompile("\n\n\n+")
 
 type RedditCommentsClient struct {
 	client *http.Client
@@ -191,8 +177,7 @@ func collectBlockText(blockNode HtmlNode, blockText *strings.Builder) {
 	} else if blockNode.Tag() == "li" || blockNode.Tag() == "ol" {
 		blockText.WriteString("- ")
 	} else if blockNode.Tag() == "a" {
-		hyperlink := renderHyperlink(blockNode.GetAttr("href"), blockNode.Text())
-		fmt.Fprint(blockText, hyperlinkStyle.Render(hyperlink))
+		blockText.WriteString(renderAnchor(blockNode))
 		return
 	}
 
@@ -238,22 +223,4 @@ func formatDepth(s string, depth int) string {
 	sb.WriteString(s)
 
 	return sb.String()
-}
-
-func addQueryParameter(url, query string) string {
-	if strings.Contains(url, "?") {
-		return fmt.Sprintf("%s&%s", url, query)
-	}
-
-	return fmt.Sprintf("%s?%s", url, query)
-}
-
-func renderHyperlink(url, linkText string) string {
-	return fmt.Sprintf(
-		"%s%s%s%s%s",
-		hyperLinkStartSequence,
-		url,
-		hyperLinkSeparatorSequence,
-		linkText,
-		hyperLinkEndSequence)
 }

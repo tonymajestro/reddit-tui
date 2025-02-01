@@ -1,11 +1,24 @@
 package client
 
 import (
+	"fmt"
 	"iter"
+	"reddittui/components/colors"
 	"slices"
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"golang.org/x/net/html"
+)
+
+var hyperLinkStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
+
+const (
+	limitQueryParameter = "limit=500"
+
+	hyperLinkStartSequence     = "\x1B]8;;"
+	hyperLinkSeparatorSequence = "\x1B\\"
+	hyperLinkEndSequence       = "\x1B]8;;\x1B\\"
 )
 
 type HtmlNode struct {
@@ -135,4 +148,33 @@ func (n HtmlNode) FindChildren(tag string, classes ...string) iter.Seq[HtmlNode]
 			}
 		}
 	}
+}
+
+func renderAnchor(anchorNode HtmlNode) string {
+	var (
+		url      = anchorNode.GetAttr("href")
+		linkText = anchorNode.Text()
+	)
+
+	if !strings.HasPrefix(url, "http") && !strings.HasPrefix(url, "www") {
+		return hyperLinkStyle.Render(linkText)
+	}
+
+	hyperlink := fmt.Sprintf(
+		"%s%s%s%s%s",
+		hyperLinkStartSequence,
+		url,
+		hyperLinkSeparatorSequence,
+		linkText,
+		hyperLinkEndSequence)
+
+	return hyperLinkStyle.Render(hyperlink)
+}
+
+func addQueryParameter(url, query string) string {
+	if strings.Contains(url, "?") {
+		return fmt.Sprintf("%s&%s", url, query)
+	}
+
+	return fmt.Sprintf("%s?%s", url, query)
 }
