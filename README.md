@@ -3,4 +3,5 @@ Terminal UI for reddit
 
 
 ## Demo
-![Demo](/images/demo.mov)
+
+![](/images/demo.mov)
