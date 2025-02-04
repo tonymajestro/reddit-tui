@@ -19,6 +19,11 @@ type (
 	OpenModalMsg        struct{}
 	ExitModalMsg        struct{}
 	ShowSpinnerModalMsg string
+
+	ErrorMsg          string
+	ShowErrorModalMsg string
+
+	OpenUrlMsg string
 )
 
 func Init() tea.Msg {
@@ -63,6 +68,24 @@ func ShowSpinnerModal(loadingMsg string) tea.Cmd {
 	}
 }
 
+func Error(errorMsg string) tea.Cmd {
+	return func() tea.Msg {
+		return ErrorMsg(errorMsg)
+	}
+}
+
+func ShowErrorModal(errorMsg string) tea.Cmd {
+	return func() tea.Msg {
+		return ShowErrorModalMsg(errorMsg)
+	}
+}
+
 func HideSpinnerModal() tea.Msg {
 	return ExitModalMsg{}
+}
+
+func OpenUrl(url string) tea.Cmd {
+	return func() tea.Msg {
+		return OpenUrlMsg(url)
+	}
 }

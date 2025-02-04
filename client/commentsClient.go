@@ -1,7 +1,7 @@
 package client
 
 import (
-	"log/slog"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -37,21 +37,29 @@ func (r RedditCommentsClient) GetComments(url string) (Comments, error) {
 		return comments, err
 	}
 
-	comments = createCommentsHelper(HtmlNode{doc})
+	comments = createCommentsHelper(HtmlNode{doc}, url)
 	return comments, nil
 }
 
-func createCommentsHelper(root HtmlNode) Comments {
+func createCommentsHelper(root HtmlNode, url string) Comments {
 	var commentsData Comments
 	var commentsList []Comment
 
 	commentsData.PostTitle = getTitle(root)
-	commentsData.PostText = getPostText(root)
+
 	commentsData.PostAuthor = getPostAuthor(root)
 	commentsData.PostTimestamp = getPostTimestamp(root)
 	commentsData.Subreddit = getSubreddit(root)
 	commentsData.PostPoints = getPostPoints(root)
 	commentsData.Comments = createCommentsList(root, 0, commentsList)
+
+	postText, postUrl := getPostContent(root)
+	if postUrl == "" {
+		// Self post
+		postUrl = url
+	}
+	commentsData.PostText = postText
+	commentsData.PostUrl = postUrl
 
 	return commentsData
 }
@@ -111,7 +119,7 @@ func parseCommentNode(node HtmlNode, depth int, comments []Comment) []Comment {
 	}
 
 	if usertextNode, ok := node.FindChild("form", "usertext"); ok {
-		comment.Text = strings.TrimSpace(getBlockHtml(usertextNode))
+		comment.Text = strings.TrimSpace(renderHtmlNode(usertextNode))
 	}
 
 	comments = append(comments, comment)
@@ -128,15 +136,27 @@ func getTitle(root HtmlNode) string {
 	return ""
 }
 
-func getPostText(root HtmlNode) string {
+func getPostContent(root HtmlNode) (content, url string) {
 	if linkListingNode, ok := root.FindDescendant("div", "sitetable", "linklisting"); ok {
+		// self post
 		if mdNode, ok := linkListingNode.FindDescendant("div", "md"); ok {
-			postText := getBlockHtml(mdNode)
-			return postTextTrimRegex.ReplaceAllString(postText, "\n\n")
+			postText := renderHtmlNode(mdNode)
+			content = postTextTrimRegex.ReplaceAllString(postText, "\n\n")
+			return content, ""
 		}
 	}
 
-	return ""
+	if entry, ok := root.FindDescendant("div", "entry", "unvoted"); ok {
+		// link post
+		if linkNode, ok := entry.FindDescendant("a", "title"); ok {
+			url = linkNode.GetAttr("href")
+			content := fmt.Sprintf("%s\n\n", hyperLinkStyle.Render(url))
+			return content, url
+
+		}
+	}
+
+	return "", ""
 }
 
 func getPostAuthor(root HtmlNode) string {
@@ -159,33 +179,33 @@ func getPostTimestamp(root HtmlNode) string {
 	return ""
 }
 
-func getBlockHtml(node HtmlNode) string {
+func renderHtmlNode(node HtmlNode) string {
 	var content strings.Builder
 	for child := range node.ChildNodes() {
 		cNode := HtmlNode{child}
 
-		var blockText strings.Builder
-		collectBlockText(cNode, &blockText)
-		content.WriteString(blockText.String())
+		var nodeResults strings.Builder
+		renderHtmlNodeHelper(cNode, &nodeResults)
+		content.WriteString(nodeResults.String())
 		content.WriteString("\n")
 	}
 
 	return content.String()
 }
 
-func collectBlockText(node HtmlNode, blockText *strings.Builder) {
+func renderHtmlNodeHelper(node HtmlNode, results *strings.Builder) {
 	if node.Type == html.TextNode {
-		blockText.WriteString(node.Data)
+		results.WriteString(node.Data)
 	} else if node.Tag() == "a" {
-		blockText.WriteString(renderAnchor(node))
+		results.WriteString(renderAnchor(node))
 		return
 	} else if node.Tag() == "li" {
-		blockText.WriteString(node.Text())
+		results.WriteString(node.Text())
 		return
 	}
 
 	for child := range node.ChildNodes() {
-		collectBlockText(HtmlNode{child}, blockText)
+		renderHtmlNodeHelper(HtmlNode{child}, results)
 	}
 }
 
@@ -215,16 +235,15 @@ func getPostPoints(root HtmlNode) string {
 		}
 	}
 
-	slog.Info("Could not find post points node")
 	return ""
 }
 
 func formatDepth(s string, depth int) string {
-	var sb strings.Builder
+	var results strings.Builder
 	for range depth {
-		sb.WriteString("  ")
+		results.WriteString("  ")
 	}
-	sb.WriteString(s)
+	results.WriteString(s)
 
-	return sb.String()
+	return results.String()
 }

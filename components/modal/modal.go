@@ -1,6 +1,7 @@
 package modal
 
 import (
+	"log/slog"
 	"reddittui/components/colors"
 	"reddittui/components/messages"
 
@@ -16,6 +17,7 @@ const (
 	loading
 	searching
 	quitting
+	showingError
 )
 
 var modalStyle = lipgloss.NewStyle().
@@ -25,17 +27,21 @@ var modalStyle = lipgloss.NewStyle().
 	Margin(1, 1)
 
 type ModalManager struct {
-	quit    QuitModal
-	search  SubredditSearchModal
-	spinner SpinnerModal
-	state   SessionState
+	quit       QuitModal
+	search     SubredditSearchModal
+	spinner    SpinnerModal
+	errorModal ErrorModal
+	state      SessionState
+	style      lipgloss.Style
 }
 
 func NewModalManager() ModalManager {
 	return ModalManager{
-		quit:    NewQuitModal(),
-		search:  NewSubredditSearchModal(),
-		spinner: NewSpinnerModal(),
+		quit:       NewQuitModal(),
+		search:     NewSubredditSearchModal(),
+		spinner:    NewSpinnerModal(),
+		errorModal: NewErrorModal(),
+		style:      modalStyle,
 	}
 }
 
@@ -69,6 +75,9 @@ func (m ModalManager) handleGlobalMessages(msg tea.Msg) (ModalManager, tea.Cmd) 
 		loadingMsg := string(msg)
 		return m, m.setLoading(loadingMsg)
 
+	case messages.ShowErrorModalMsg:
+		return m, m.setError(string(msg))
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "q":
@@ -96,6 +105,9 @@ func (m ModalManager) handleFocusedMessages(msg tea.Msg) (ModalManager, tea.Cmd)
 	case searching:
 		m.search, cmd = m.search.Update(msg)
 		return m, cmd
+	case showingError:
+		m.errorModal, cmd = m.errorModal.Update(msg)
+		return m, cmd
 	default:
 		return m, nil
 	}
@@ -104,11 +116,13 @@ func (m ModalManager) handleFocusedMessages(msg tea.Msg) (ModalManager, tea.Cmd)
 func (m ModalManager) View(background Viewer) string {
 	switch m.state {
 	case loading:
-		return PlaceModal(m.spinner, background, lipgloss.Center, lipgloss.Center, modalStyle)
+		return PlaceModal(m.spinner, background, lipgloss.Center, lipgloss.Center, m.style)
 	case quitting:
-		return PlaceModal(m.quit, background, lipgloss.Center, lipgloss.Center, modalStyle)
+		return PlaceModal(m.quit, background, lipgloss.Center, lipgloss.Center, m.style)
 	case searching:
-		return PlaceModal(m.search, background, lipgloss.Center, lipgloss.Center, modalStyle)
+		return PlaceModal(m.search, background, lipgloss.Center, lipgloss.Center, m.style)
+	case showingError:
+		return PlaceModal(m.errorModal, background, lipgloss.Center, lipgloss.Center, m.style)
 	}
 
 	panic("Unexpected session state")
@@ -116,11 +130,13 @@ func (m ModalManager) View(background Viewer) string {
 
 func (m *ModalManager) SetSize(w, h int) {
 	m.search.SetSize(w, h)
+
+	modalSize := int((float64(w) * (2)) / 3.0)
+	m.style = m.style.MaxWidth(modalSize)
 }
 
 func (m *ModalManager) Blur() {
 	m.state = defaultState
-	m.quit.Blur()
 	m.search.Blur()
 }
 
@@ -141,5 +157,12 @@ func (m *ModalManager) setSearching() tea.Cmd {
 
 func (m *ModalManager) setQuitting() tea.Cmd {
 	m.state = quitting
+	return messages.OpenModal
+}
+
+func (m *ModalManager) setError(errorMsg string) tea.Cmd {
+	m.state = showingError
+	slog.Info("Setting error modal")
+	m.errorModal.ErrorMsg = errorMsg
 	return messages.OpenModal
 }

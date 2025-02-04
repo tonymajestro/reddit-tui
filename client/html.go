@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"iter"
-	"log/slog"
 	"reddittui/components/colors"
 	"slices"
 	"strings"
@@ -12,7 +11,10 @@ import (
 	"golang.org/x/net/html"
 )
 
-var hyperLinkStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
+var (
+	hyperLinkStyle     = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
+	linkPostTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(colors.AdaptiveColor(colors.Text))
+)
 
 const limitQueryParameter = "limit=500"
 
@@ -152,10 +154,8 @@ func renderAnchor(node HtmlNode) string {
 	)
 
 	if !strings.HasPrefix(url, "http") && !strings.HasPrefix(url, "www") {
-		slog.Info("Not http")
 		return hyperLinkStyle.Render(linkText)
 	} else if url == linkText {
-		slog.Info("url equals link text")
 		return hyperLinkStyle.Render(linkText)
 	}
 

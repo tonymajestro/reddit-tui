@@ -18,13 +18,13 @@ const (
 )
 
 type PostsPage struct {
-	Home           bool
 	Subreddit      string
 	posts          []client.Post
 	redditClient   client.RedditClient
 	header         PostsHeader
 	list           list.Model
 	focus          bool
+	Home           bool
 	containerStyle lipgloss.Style
 }
 
@@ -178,7 +178,6 @@ func (p *PostsPage) loadHome() tea.Cmd {
 func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
 	p.Subreddit = subreddit
 	return func() tea.Msg {
-		slog.Info("Loading subreddit page posts", "subreddit", subreddit)
 		posts, err := p.redditClient.GetSubredditPosts(subreddit)
 		if err != nil {
 			slog.Error("Error loading home page posts", "error", err)

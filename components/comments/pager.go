@@ -2,7 +2,6 @@ package comments
 
 import (
 	"fmt"
-	"log/slog"
 	"reddittui/client"
 	"strconv"
 	"strings"
@@ -123,7 +122,6 @@ func (c *CommentsViewport) formatComment(comment client.Comment, i int) string {
 	)
 
 	if c.collapsed && comment.Depth > 0 {
-		slog.Info("Collapsed, exiting...")
 		return ""
 	}
 

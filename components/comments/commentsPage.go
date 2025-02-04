@@ -16,6 +16,7 @@ type CommentsPage struct {
 	header         CommentsHeader
 	pager          CommentsViewport
 	containerStyle lipgloss.Style
+	postUrl        string
 	focus          bool
 }
 
@@ -71,6 +72,10 @@ func (c CommentsPage) handleFocusedMessages(msg tea.Msg) (CommentsPage, tea.Cmd)
 
 		case "b", "B", "escape", "backspace", "left", "h":
 			return c, messages.GoBack
+
+		case "o", "O":
+			slog.Info("opening url: " + c.postUrl)
+			return c, messages.OpenUrl(c.postUrl)
 		}
 	}
 
@@ -113,7 +118,6 @@ func (c *CommentsPage) resizeComponents() {
 
 func (c *CommentsPage) loadComments(url string) tea.Cmd {
 	return func() tea.Msg {
-		slog.Info("Loading comments page", "url", url)
 		comments, err := c.redditClient.GetComments(url)
 		if err != nil {
 			slog.Error("Error loading comments page", "url", url, "error", err)
@@ -127,6 +131,7 @@ func (c *CommentsPage) loadComments(url string) tea.Cmd {
 func (c *CommentsPage) updateComments(comments client.Comments) {
 	c.header.SetContent(comments)
 	c.pager.SetContent(comments)
+	c.postUrl = comments.PostUrl
 
 	// Need to resize components when content loads so padding and margins are correct
 	c.resizeComponents()

@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"log/slog"
 	"reddittui/client"
 	"reddittui/components/comments"
 	"reddittui/components/messages"
@@ -109,6 +110,17 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.loadingPage = CommentsPage
 		loadingMsg := "loading comments..."
 		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
+
+	case messages.OpenUrlMsg:
+		url := string(msg)
+		if err := utils.OpenUrl(url); err != nil {
+			slog.Error("Error opening url in browser", "url", url, "error", err.Error())
+			errorMsg := fmt.Sprintf("Could not open url %s in browser", url)
+			cmds = append(cmds, messages.ShowErrorModal(errorMsg))
+		}
+
+	case messages.ErrorMsg:
+		cmds = append(cmds, messages.ShowErrorModal(string(msg)))
 
 	case tea.WindowSizeMsg:
 		r.homePage.SetSize(msg.Width, msg.Height)

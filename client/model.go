@@ -64,6 +64,7 @@ type Comments struct {
 	Subreddit     string
 	PostPoints    string
 	PostText      string
+	PostUrl       string
 	PostTimestamp string
 	Comments      []Comment
 }

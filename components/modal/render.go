@@ -11,6 +11,8 @@ import (
 	"github.com/muesli/termenv"
 )
 
+const maxModalWidthPercentage = 0.66
+
 // Most code in this file is taken from the following codebases (modals are not currently supported in charmbracelet)
 //
 // https://github.com/mrusme/neonmodem/blob/a237769cbfc526bec380d90e4a3b873fbb47e77c/ui/helpers/overlay.go#L37
@@ -25,11 +27,14 @@ func PlaceModal(foreground, background Viewer, xPos, yPos lipgloss.Position, mod
 		x int
 		y int
 
-		fg = modalStyle.Render(foreground.View())
-		bg = background.View()
+		initFg      = modalStyle.Render(foreground.View())
+		initFgWidth = lipgloss.Width(initFg)
 
-		fgWidth  = lipgloss.Width(fg)
+		fgWidth  = min(initFgWidth, int(float64(modalStyle.GetMaxWidth())*maxModalWidthPercentage))
+		fg       = modalStyle.Width(fgWidth).Render(foreground.View())
 		fgHeight = lipgloss.Height(fg)
+
+		bg       = background.View()
 		bgWidth  = lipgloss.Width(bg)
 		bgHeight = lipgloss.Height(bg)
 	)

@@ -19,9 +19,7 @@ var (
 	quitYesNoStyle = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Text)).Bold(true)
 )
 
-type QuitModal struct {
-	quitting bool
-}
+type QuitModal struct{}
 
 func NewQuitModal() QuitModal {
 	return QuitModal{}
@@ -46,8 +44,4 @@ func (q QuitModal) Update(msg tea.Msg) (QuitModal, tea.Cmd) {
 	}
 
 	return q, nil
-}
-
-func (q *QuitModal) Blur() {
-	q.quitting = false
 }
