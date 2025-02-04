@@ -1,6 +1,7 @@
 package client
 
 import (
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -214,6 +215,7 @@ func getPostPoints(root HtmlNode) string {
 		}
 	}
 
+	slog.Info("Could not find post points node")
 	return ""
 }
 

@@ -30,7 +30,7 @@ type CommentsHeader struct {
 	Description      string
 	Author           string
 	Timestamp        string
-	Points           int
+	Points           string
 	TotalComments    int
 	W                int
 }
@@ -53,7 +53,7 @@ func (h CommentsHeader) View() string {
 	authorTimestampView := fmt.Sprintf("%s %s", timestampView, authorView)
 
 	postPointsView := postPointsStyle.Render(utils.GetSingularPlural(h.Points, "point", "points"))
-	totalCommentsView := totalCommentsStyle.Render(utils.GetSingularPlural(h.TotalComments, "comment", "comments"))
+	totalCommentsView := totalCommentsStyle.Render(utils.GetSingularPlural(strconv.Itoa(h.TotalComments), "comment", "comments"))
 	pointsAndCommentsView := fmt.Sprintf("%s • %s", postPointsView, totalCommentsView)
 
 	joinedView := lipgloss.JoinVertical(lipgloss.Left, titleView, descriptionView, authorTimestampView, pointsAndCommentsView)
@@ -67,10 +67,5 @@ func (h *CommentsHeader) SetContent(comments client.Comments) {
 	h.Author = comments.PostAuthor
 	h.TotalComments = len(comments.Comments)
 	h.Timestamp = comments.PostTimestamp
-
-	if points, err := strconv.Atoi(comments.PostPoints); err != nil {
-		h.Points = 0
-	} else {
-		h.Points = points
-	}
+	h.Points = comments.PostPoints
 }

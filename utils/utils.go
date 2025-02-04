@@ -32,10 +32,10 @@ func Clamp(min, max, val int) int {
 	return val
 }
 
-func GetSingularPlural(i int, singular, plural string) string {
-	if i == 1 {
-		return fmt.Sprintf("%d %s", i, singular)
+func GetSingularPlural(s, singular, plural string) string {
+	if s == "1" {
+		return fmt.Sprintf("%s %s", s, singular)
 	}
 
-	return fmt.Sprintf("%d %s", i, plural)
+	return fmt.Sprintf("%s %s", s, plural)
 }
