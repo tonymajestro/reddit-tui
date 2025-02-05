@@ -1,7 +1,7 @@
 package messages
 
 import (
-	"reddittui/client"
+	"reddittui/model"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -9,11 +9,11 @@ import (
 type (
 	InitMsg            struct{}
 	GoBackMsg          struct{}
-	LoadCommentsMsg    client.Post
+	LoadCommentsMsg    model.Post
 	LoadHomeMsg        struct{}
 	LoadSubredditMsg   string
-	UpdateCommentsMsg  client.Comments
-	UpdatePostsMsg     client.Posts
+	UpdateCommentsMsg  model.Comments
+	UpdatePostsMsg     model.Posts
 	LoadingCompleteMsg struct{}
 
 	OpenModalMsg        struct{}
@@ -44,7 +44,7 @@ func LoadSubreddit(subreddit string) tea.Cmd {
 	}
 }
 
-func LoadComments(post client.Post) tea.Cmd {
+func LoadComments(post model.Post) tea.Cmd {
 	return func() tea.Msg {
 		return LoadCommentsMsg(post)
 	}

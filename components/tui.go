@@ -38,7 +38,7 @@ type RedditTui struct {
 }
 
 func NewRedditTui() RedditTui {
-	redditClient := client.New()
+	redditClient := client.NewRedditClient()
 
 	homePage := posts.NewPostsPage(redditClient, true)
 	subredditPage := posts.NewPostsPage(redditClient, false)
@@ -56,7 +56,7 @@ func NewRedditTui() RedditTui {
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	return messages.LoadSubreddit("neovim")
+	return messages.LoadHome
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -67,14 +67,11 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case messages.OpenModalMsg:
-		r.openModal()
+		r.focusModal()
 		return r, nil
 
 	case messages.LoadingCompleteMsg:
-		r.popup = false
-		r.setPage(r.loadingPage)
-		r.focusActivePage()
-		r.modalManager.Blur()
+		r.completeLoading()
 		return r, nil
 
 	case messages.ExitModalMsg:
@@ -92,6 +89,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r, nil
 		}
 
+		r.focusModal()
 		r.initializing = false
 		r.loadingPage = HomePage
 		cmds = append(cmds, messages.ShowSpinnerModal(defaultLoadingMessage))
@@ -102,11 +100,13 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return r, nil
 		}
 
+		r.focusModal()
 		r.loadingPage = SubredditPage
 		loadingMsg := fmt.Sprintf("loading %s...", utils.NormalizeSubreddit(subreddit))
 		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
 
 	case messages.LoadCommentsMsg:
+		r.focusModal()
 		r.loadingPage = CommentsPage
 		loadingMsg := "loading comments..."
 		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
@@ -193,7 +193,14 @@ func (r *RedditTui) setPage(page pageType) {
 	r.page, r.prevPage = page, r.page
 }
 
-func (r *RedditTui) openModal() {
+func (r *RedditTui) completeLoading() {
+	r.popup = false
+	r.setPage(r.loadingPage)
+	r.focusActivePage()
+	r.modalManager.Blur()
+}
+
+func (r *RedditTui) focusModal() {
 	r.popup = true
 	r.homePage.Blur()
 	r.subredditPage.Blur()

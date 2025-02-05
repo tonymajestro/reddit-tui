@@ -44,3 +44,8 @@ func OpenLogFile() (*os.File, error) {
 	logPath := filepath.Join(stateDir, logFileName)
 	return os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 }
+
+func FileExists(path string) bool {
+	_, err := os.Open(path)
+	return os.IsNotExist(err)
+}

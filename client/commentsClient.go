@@ -2,9 +2,13 @@ package client
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
+	"reddittui/client/cache"
+	"reddittui/model"
 	"regexp"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -12,46 +16,58 @@ import (
 var postTextTrimRegex = regexp.MustCompile("\n\n\n+")
 
 type RedditCommentsClient struct {
-	client *http.Client
+	Client *http.Client
+	Cache  cache.CommentsCache
 }
 
-func (r RedditCommentsClient) GetComments(url string) (Comments, error) {
-	var comments Comments
+func (r RedditCommentsClient) GetComments(url string) (comments model.Comments, err error) {
+	comments, err = r.Cache.Get(url)
+	if err == nil {
+		// return cached data
+		slog.Info("Cache hit")
+		return comments, nil
+	}
 
-	url = addQueryParameter(url, limitQueryParameter)
-	req, err := http.NewRequest("GET", url, nil)
+	urlWithLimit := addQueryParameter(url, limitQueryParameter)
+	req, err := http.NewRequest("GET", urlWithLimit, nil)
 	if err != nil {
 		return comments, err
 	}
 	req.Header.Add(userAgentKey, userAgentValue)
 
-	res, err := r.client.Do(req)
+	res, err := r.Client.Do(req)
 	if err != nil {
 		return comments, err
 	}
 
 	defer res.Body.Close()
+	maxAge, err := getMaxAge(res)
+	if err != nil {
+		slog.Error("Error getting cache headers from response", "error", err.Error(), "url", url)
+	}
 
 	doc, err := html.Parse(res.Body)
 	if err != nil {
 		return comments, err
 	}
 
-	comments = createCommentsHelper(HtmlNode{doc}, url)
+	comments = parseComments(HtmlNode{doc}, url)
+	comments.Expiry = time.Now().Add(maxAge)
+
+	r.Cache.Put(comments, url)
 	return comments, nil
 }
 
-func createCommentsHelper(root HtmlNode, url string) Comments {
-	var commentsData Comments
-	var commentsList []Comment
+func parseComments(root HtmlNode, url string) model.Comments {
+	var commentsData model.Comments
+	var commentsList []model.Comment
 
 	commentsData.PostTitle = getTitle(root)
-
 	commentsData.PostAuthor = getPostAuthor(root)
 	commentsData.PostTimestamp = getPostTimestamp(root)
 	commentsData.Subreddit = getSubreddit(root)
 	commentsData.PostPoints = getPostPoints(root)
-	commentsData.Comments = createCommentsList(root, 0, commentsList)
+	commentsData.Comments = parseCommentsList(root, 0, commentsList)
 
 	postText, postUrl := getPostContent(root)
 	if postUrl == "" {
@@ -64,7 +80,7 @@ func createCommentsHelper(root HtmlNode, url string) Comments {
 	return commentsData
 }
 
-func createCommentsList(node HtmlNode, depth int, comments []Comment) []Comment {
+func parseCommentsList(node HtmlNode, depth int, comments []model.Comment) []model.Comment {
 	var commentsNode HtmlNode
 
 	commentsNode, ok := node.FindDescendant("div", "sitetable", "nestedlisting")
@@ -90,15 +106,15 @@ func createCommentsList(node HtmlNode, depth int, comments []Comment) []Comment 
 		comments = parseCommentNode(entryNode, depth, comments)
 
 		if n, ok := c.FindChild("div", "child"); ok {
-			comments = createCommentsList(n, depth+1, comments)
+			comments = parseCommentsList(n, depth+1, comments)
 		}
 	}
 
 	return comments
 }
 
-func parseCommentNode(node HtmlNode, depth int, comments []Comment) []Comment {
-	var comment Comment
+func parseCommentNode(node HtmlNode, depth int, comments []model.Comment) []model.Comment {
+	var comment model.Comment
 	comment.Depth = depth
 
 	if taglineNode, ok := node.FindChild("p", "tagline"); ok {
@@ -236,14 +252,4 @@ func getPostPoints(root HtmlNode) string {
 	}
 
 	return ""
-}
-
-func formatDepth(s string, depth int) string {
-	var results strings.Builder
-	for range depth {
-		results.WriteString("  ")
-	}
-	results.WriteString(s)
-
-	return results.String()
 }

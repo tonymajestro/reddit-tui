@@ -123,9 +123,10 @@ func (m ModalManager) View(background Viewer) string {
 		return PlaceModal(m.search, background, lipgloss.Center, lipgloss.Center, m.style)
 	case showingError:
 		return PlaceModal(m.errorModal, background, lipgloss.Center, lipgloss.Center, m.style)
+	default:
+		// This sometimes happens when loading completes before the loading modal finishes rendering
+		return ""
 	}
-
-	panic("Unexpected session state")
 }
 
 func (m *ModalManager) SetSize(w, h int) {
@@ -143,10 +144,7 @@ func (m *ModalManager) Blur() {
 func (m *ModalManager) setLoading(message string) tea.Cmd {
 	m.state = loading
 	m.spinner.SetLoading(message)
-	return tea.Batch(
-		messages.OpenModal,
-		m.spinner.Tick,
-	)
+	return m.spinner.Tick
 }
 
 func (m *ModalManager) setSearching() tea.Cmd {

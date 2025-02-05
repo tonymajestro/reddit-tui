@@ -6,6 +6,7 @@ import (
 	"reddittui/client"
 	"reddittui/components/messages"
 	"reddittui/components/styles"
+	"reddittui/model"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -56,7 +57,7 @@ func (c CommentsPage) handleGlobalMessages(msg tea.Msg) (CommentsPage, tea.Cmd) 
 	case messages.LoadCommentsMsg:
 		return c, c.loadComments(msg.CommentsUrl)
 	case messages.UpdateCommentsMsg:
-		c.updateComments(client.Comments(msg))
+		c.updateComments(model.Comments(msg))
 		return c, messages.LoadingComplete
 	}
 
@@ -128,7 +129,7 @@ func (c *CommentsPage) loadComments(url string) tea.Cmd {
 	}
 }
 
-func (c *CommentsPage) updateComments(comments client.Comments) {
+func (c *CommentsPage) updateComments(comments model.Comments) {
 	c.header.SetContent(comments)
 	c.pager.SetContent(comments)
 	c.postUrl = comments.PostUrl

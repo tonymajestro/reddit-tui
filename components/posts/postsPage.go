@@ -6,6 +6,7 @@ import (
 	"reddittui/client"
 	"reddittui/components/messages"
 	"reddittui/components/styles"
+	"reddittui/model"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,7 +20,7 @@ const (
 
 type PostsPage struct {
 	Subreddit      string
-	posts          []client.Post
+	posts          []model.Post
 	redditClient   client.RedditClient
 	header         PostsHeader
 	list           list.Model
@@ -44,7 +45,7 @@ func NewPostsPage(redditClient client.RedditClient, home bool) PostsPage {
 	containerStyle := styles.GlobalStyle
 
 	return PostsPage{
-		posts:          []client.Post{},
+		posts:          []model.Post{},
 		list:           items,
 		redditClient:   redditClient,
 		header:         header,
@@ -86,7 +87,7 @@ func (p PostsPage) handleGlobalMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 		}
 
 	case messages.UpdatePostsMsg:
-		posts := client.Posts(msg)
+		posts := model.Posts(msg)
 		if posts.IsHome == p.Home {
 			p.updatePosts(posts)
 			return p, messages.LoadingComplete
@@ -187,7 +188,7 @@ func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
 	}
 }
 
-func (p *PostsPage) updatePosts(posts client.Posts) {
+func (p *PostsPage) updatePosts(posts model.Posts) {
 	p.posts = posts.Posts
 
 	if posts.IsHome {

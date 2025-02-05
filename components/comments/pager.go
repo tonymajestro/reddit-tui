@@ -2,7 +2,7 @@ package comments
 
 import (
 	"fmt"
-	"reddittui/client"
+	"reddittui/model"
 	"strconv"
 	"strings"
 
@@ -16,7 +16,7 @@ import (
 type CommentsViewport struct {
 	viewport      viewport.Model
 	postText      string
-	comments      []client.Comment
+	comments      []model.Comment
 	keyMap        viewportKeyMap
 	help          help.Model
 	collapsed     bool
@@ -68,7 +68,7 @@ func (c *CommentsViewport) SetSize(w, h int) {
 	c.SetViewportContent()
 }
 
-func (c *CommentsViewport) SetContent(comments client.Comments) {
+func (c *CommentsViewport) SetContent(comments model.Comments) {
 	c.postText = comments.PostText
 	c.comments = comments.Comments
 
@@ -112,7 +112,7 @@ func (c *CommentsViewport) SetViewportContent() {
 }
 
 // Format comment, adding padding to the entry according to the comment's depth
-func (c *CommentsViewport) formatComment(comment client.Comment, i int) string {
+func (c *CommentsViewport) formatComment(comment model.Comment, i int) string {
 	var (
 		authorAndDateView          string
 		pointsView                 string

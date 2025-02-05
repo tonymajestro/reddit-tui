@@ -1,36 +1,57 @@
 package client
 
 import (
+	"errors"
+	"log/slog"
 	"net/http"
+	"reddittui/client/cache"
+	"reddittui/model"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
 
+var errParsingCacheHeaders = errors.New("could not parse cache-control header")
+
 type RedditPostsClient struct {
-	client *http.Client
+	Client *http.Client
+	Cache  cache.PostsCache
 }
 
-func (r RedditPostsClient) GetHomePosts() (Posts, error) {
-	posts, err := r.getPosts(homeUrl)
+func (r RedditPostsClient) GetHomePosts() (model.Posts, error) {
+	posts, err := r.tryGetCachedPosts(homeUrl)
 	posts.IsHome = true
-
 	return posts, err
 }
 
-func (r RedditPostsClient) GetSubredditPosts(subreddit string) (Posts, error) {
-	url := subredditUrl + subreddit
-	posts, err := r.getPosts(url)
-
+func (r RedditPostsClient) GetSubredditPosts(subreddit string) (model.Posts, error) {
+	postsUrl := subredditUrl + subreddit
+	posts, err := r.tryGetCachedPosts(postsUrl)
 	posts.Subreddit = subreddit
-	posts.IsHome = false
 
 	return posts, err
 }
 
-func (r RedditPostsClient) getPosts(url string) (Posts, error) {
-	var posts Posts
+// Try to get posts from cache. If they are not present, fetch them from reddit.com and
+// cache the results
+func (r RedditPostsClient) tryGetCachedPosts(postsUrl string) (posts model.Posts, err error) {
+	posts, err = r.Cache.Get(postsUrl)
+	if err == nil {
+		// return cached data
+		return posts, nil
+	}
 
+	posts, err = r.getPosts(postsUrl)
+	if err != nil {
+		return posts, err
+	}
+
+	r.Cache.Put(posts, postsUrl)
+	return posts, nil
+}
+
+func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return posts, err
@@ -38,24 +59,31 @@ func (r RedditPostsClient) getPosts(url string) (Posts, error) {
 
 	req.Header.Add(userAgentKey, userAgentValue)
 
-	res, err := r.client.Do(req)
+	res, err := r.Client.Do(req)
 	if err != nil {
 		return posts, err
 	}
 
 	defer res.Body.Close()
 
+	maxAge, err := getMaxAge(res)
+	if err != nil {
+		slog.Error("Error getting cache headers from response", "error", err.Error(), "url", url)
+	}
+
 	doc, err := html.Parse(res.Body)
 	if err != nil {
 		return posts, err
 	}
 
-	return createPosts(HtmlNode{doc}), nil
+	posts = createPosts(HtmlNode{doc})
+	posts.Expiry = time.Now().Add(maxAge)
+	return posts, nil
 }
 
-func createPosts(root HtmlNode) Posts {
+func createPosts(root HtmlNode) model.Posts {
 	var (
-		posts       []Post
+		posts       []model.Post
 		description string
 	)
 
@@ -75,14 +103,14 @@ func createPosts(root HtmlNode) Posts {
 		}
 	}
 
-	return Posts{
+	return model.Posts{
 		Posts:       posts,
 		Description: description,
 	}
 }
 
-func createPost(n HtmlNode) Post {
-	var p Post
+func createPost(n HtmlNode) model.Post {
+	var p model.Post
 	for c := range n.Descendants() {
 		cNode := HtmlNode{c}
 

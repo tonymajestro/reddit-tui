@@ -2,8 +2,8 @@ package comments
 
 import (
 	"fmt"
-	"reddittui/client"
 	"reddittui/components/colors"
+	"reddittui/model"
 	"reddittui/utils"
 	"strconv"
 
@@ -61,7 +61,7 @@ func (h CommentsHeader) View() string {
 	return headerContainerStyle.Render(joinedView)
 }
 
-func (h *CommentsHeader) SetContent(comments client.Comments) {
+func (h *CommentsHeader) SetContent(comments model.Comments) {
 	h.Title = utils.NormalizeSubreddit(comments.Subreddit)
 	h.Description = comments.PostTitle
 	h.Author = comments.PostAuthor
