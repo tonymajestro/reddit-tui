@@ -27,14 +27,15 @@ const (
 type RedditClient struct {
 	postsClient    RedditPostsClient
 	commentsClient RedditCommentsClient
+	bypassCache    bool
 }
 
-func NewRedditClient() RedditClient {
+func NewRedditClient(bypassCache bool) RedditClient {
 	httpClient := &http.Client{
 		Timeout: time.Duration(10) * time.Second,
 	}
 
-	postsCache, commentsCache := InitializeCaches()
+	postsCache, commentsCache := InitializeCaches(bypassCache)
 	postsClient := RedditPostsClient{
 		Client: httpClient,
 		Cache:  postsCache,
@@ -47,6 +48,7 @@ func NewRedditClient() RedditClient {
 	return RedditClient{
 		postsClient,
 		commentsClient,
+		bypassCache,
 	}
 }
 
@@ -62,7 +64,11 @@ func (r RedditClient) GetComments(url string) (model.Comments, error) {
 	return r.commentsClient.GetComments(url)
 }
 
-func InitializeCaches() (cache.PostsCache, cache.CommentsCache) {
+func InitializeCaches(bypassCache bool) (cache.PostsCache, cache.CommentsCache) {
+	if bypassCache {
+		return cache.NewNoOpPostsCache(), cache.NewNoOpCommentsCache()
+	}
+
 	// read cache dir from env var
 	cacheDir, err := utils.GetCacheDir()
 	if err != nil {

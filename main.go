@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"reddittui/components"
+	"reddittui/config"
 	"reddittui/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -17,7 +18,9 @@ func main() {
 		defer logFile.Close()
 	}
 
-	reddit := components.NewRedditTui()
+	configuration, _ := config.LoadConfig()
+
+	reddit := components.NewRedditTui(configuration)
 	p := tea.NewProgram(reddit, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {

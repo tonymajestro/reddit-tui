@@ -8,6 +8,7 @@ import (
 	"reddittui/components/messages"
 	"reddittui/components/modal"
 	"reddittui/components/posts"
+	"reddittui/config"
 	"reddittui/utils"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,8 +38,8 @@ type RedditTui struct {
 	loadingPage   pageType
 }
 
-func NewRedditTui() RedditTui {
-	redditClient := client.NewRedditClient()
+func NewRedditTui(configuration config.Config) RedditTui {
+	redditClient := client.NewRedditClient(configuration.BypassCache)
 
 	homePage := posts.NewPostsPage(redditClient, true)
 	subredditPage := posts.NewPostsPage(redditClient, false)

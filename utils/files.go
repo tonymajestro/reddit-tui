@@ -6,11 +6,21 @@ import (
 )
 
 const (
-	appName         = "reddit-tui"
-	defaultStateDir = ".local/state"
-	defaultCacheDir = ".cache"
-	logFileName     = "reddit-tui.log"
+	appName          = "reddit-tui"
+	defaultConfigDir = ".config"
+	defaultStateDir  = ".local/state"
+	defaultCacheDir  = ".cache"
+	logFileName      = "reddit-tui.log"
 )
+
+func GetConfigDir() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(homeDir, defaultConfigDir, appName), nil
+}
 
 func GetStateDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
