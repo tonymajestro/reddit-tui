@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"reddittui/client/cache"
+	"reddittui/client/common"
 	"reddittui/model"
 	"strings"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-var errParsingCacheHeaders = errors.New("could not parse cache-control header")
+var ErrParsingCacheHeaders = errors.New("could not parse cache-control header")
 
 type RedditPostsClient struct {
 	Client *http.Client
@@ -62,6 +63,9 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 	res, err := r.Client.Do(req)
 	if err != nil {
 		return posts, err
+	} else if res.StatusCode != http.StatusOK {
+		// Treat all non-200s as 404s
+		return posts, common.ErrCannotLoadPosts
 	}
 
 	defer res.Body.Close()
@@ -77,6 +81,13 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 	}
 
 	posts = createPosts(HtmlNode{doc})
+	if len(posts.Posts) == 0 {
+		// if there are no posts, assume 404.
+		// reddit redirect invalid subreddits requests to some search page instead of doing 404
+		slog.Warn("Subreddit not found")
+		return posts, common.ErrNotFound
+	}
+
 	posts.Expiry = time.Now().Add(maxAge)
 	return posts, nil
 }

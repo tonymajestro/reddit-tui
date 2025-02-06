@@ -1,9 +1,10 @@
 package posts
 
 import (
+	"fmt"
 	"log/slog"
-	"os"
 	"reddittui/client"
+	"reddittui/client/common"
 	"reddittui/components/messages"
 	"reddittui/components/styles"
 	"reddittui/model"
@@ -16,6 +17,8 @@ import (
 const (
 	defaultHeaderTitle       = "reddit.com"
 	defaultHeaderDescription = "The front page of the internet"
+	postsErrorText           = "Could not load posts. Please try again in a few moments."
+	subredditNotFoundText    = "Subreddit not found"
 )
 
 type PostsPage struct {
@@ -117,7 +120,7 @@ func (p PostsPage) handleFocusedMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 		case "H":
 			return p, messages.LoadHome
 
-		case "b", "B", "escape", "backspace", "left", "h":
+		case "esc", "backspace", "left", "h":
 			return p, messages.GoBack
 		}
 	}
@@ -166,24 +169,27 @@ func (p *PostsPage) resizeComponents() {
 
 func (p *PostsPage) loadHome() tea.Cmd {
 	return func() tea.Msg {
-		slog.Info("Loading home page posts", "subreddit", "reddit.com")
 		posts, err := p.redditClient.GetHomePosts()
 		if err != nil {
-			slog.Error("Error loading home page posts", "error", err)
-			os.Exit(1)
+			slog.Error(postsErrorText, "error", err)
+			return messages.ShowErrorModalMsg(postsErrorText)
 		}
+
 		return messages.UpdatePostsMsg(posts)
 	}
 }
 
 func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
-	p.Subreddit = subreddit
 	return func() tea.Msg {
 		posts, err := p.redditClient.GetSubredditPosts(subreddit)
-		if err != nil {
-			slog.Error("Error loading home page posts", "error", err)
-			os.Exit(1)
+		if err == common.ErrNotFound {
+			slog.Error(subredditNotFoundText, "error", err, "subreddit", subreddit)
+			return messages.ShowErrorModalMsg(fmt.Sprintf("%s: %s", subredditNotFoundText, subreddit))
+		} else if err != nil {
+			slog.Error(postsErrorText, "error", err)
+			return messages.ShowErrorModalMsg(postsErrorText)
 		}
+
 		return messages.UpdatePostsMsg(posts)
 	}
 }

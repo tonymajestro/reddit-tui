@@ -9,7 +9,7 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.4.0 // indirect
+	github.com/BurntSushi/toml v1.4.0
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/sahilm/fuzzy v0.1.1 // indirect
 )

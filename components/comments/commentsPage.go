@@ -2,7 +2,6 @@ package comments
 
 import (
 	"log/slog"
-	"os"
 	"reddittui/client"
 	"reddittui/components/messages"
 	"reddittui/components/styles"
@@ -11,6 +10,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+var commentsErrorText = "Could not load comments. Please try again in a few moments."
 
 type CommentsPage struct {
 	redditClient   client.RedditClient
@@ -75,7 +76,6 @@ func (c CommentsPage) handleFocusedMessages(msg tea.Msg) (CommentsPage, tea.Cmd)
 			return c, messages.GoBack
 
 		case "o", "O":
-			slog.Info("opening url: " + c.postUrl)
 			return c, messages.OpenUrl(c.postUrl)
 		}
 	}
@@ -121,8 +121,8 @@ func (c *CommentsPage) loadComments(url string) tea.Cmd {
 	return func() tea.Msg {
 		comments, err := c.redditClient.GetComments(url)
 		if err != nil {
-			slog.Error("Error loading comments page", "url", url, "error", err)
-			os.Exit(1)
+			slog.Error(commentsErrorText, "error", err)
+			return messages.ShowErrorModalMsg(commentsErrorText)
 		}
 
 		return messages.UpdateCommentsMsg(comments)

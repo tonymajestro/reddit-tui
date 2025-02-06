@@ -73,19 +73,20 @@ func (m ModalManager) handleGlobalMessages(msg tea.Msg) (ModalManager, tea.Cmd) 
 
 	case messages.ShowSpinnerModalMsg:
 		loadingMsg := string(msg)
-		return m, m.setLoading(loadingMsg)
+		return m, m.SetLoading(loadingMsg)
 
 	case messages.ShowErrorModalMsg:
-		return m, m.setError(string(msg))
+		slog.Warn("Showing error modal")
+		return m, m.SetError(string(msg))
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "q":
 			if m.state == defaultState {
-				return m, m.setQuitting()
+				return m, m.SetQuitting()
 			}
 		case "s", "S":
-			return m, m.setSearching()
+			return m, m.SetSearching()
 		}
 	}
 
@@ -141,26 +142,25 @@ func (m *ModalManager) Blur() {
 	m.search.Blur()
 }
 
-func (m *ModalManager) setLoading(message string) tea.Cmd {
+func (m *ModalManager) SetLoading(message string) tea.Cmd {
 	m.state = loading
 	m.spinner.SetLoading(message)
 	return m.spinner.Tick
 }
 
-func (m *ModalManager) setSearching() tea.Cmd {
+func (m *ModalManager) SetSearching() tea.Cmd {
 	m.state = searching
 	m.search.Focus()
 	return messages.OpenModal
 }
 
-func (m *ModalManager) setQuitting() tea.Cmd {
+func (m *ModalManager) SetQuitting() tea.Cmd {
 	m.state = quitting
 	return messages.OpenModal
 }
 
-func (m *ModalManager) setError(errorMsg string) tea.Cmd {
+func (m *ModalManager) SetError(errorMsg string) tea.Cmd {
 	m.state = showingError
-	slog.Info("Setting error modal")
 	m.errorModal.ErrorMsg = errorMsg
 	return messages.OpenModal
 }

@@ -67,6 +67,11 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
+	case messages.ShowErrorModalMsg:
+		if r.initializing {
+			panic("Error: could not initialize home page")
+		}
+
 	case messages.OpenModalMsg:
 		r.focusModal()
 		return r, nil
@@ -91,9 +96,10 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		r.focusModal()
-		r.initializing = false
 		r.loadingPage = HomePage
-		cmds = append(cmds, messages.ShowSpinnerModal(defaultLoadingMessage))
+
+		cmd = r.modalManager.SetLoading(defaultLoadingMessage)
+		cmds = append(cmds, cmd)
 
 	case messages.LoadSubredditMsg:
 		subreddit := string(msg)
@@ -103,25 +109,29 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		r.focusModal()
 		r.loadingPage = SubredditPage
+
 		loadingMsg := fmt.Sprintf("loading %s...", utils.NormalizeSubreddit(subreddit))
-		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
+		cmd = r.modalManager.SetLoading(loadingMsg)
+		cmds = append(cmds, cmd)
 
 	case messages.LoadCommentsMsg:
 		r.focusModal()
 		r.loadingPage = CommentsPage
-		loadingMsg := "loading comments..."
-		cmds = append(cmds, messages.ShowSpinnerModal(loadingMsg))
+
+		cmd = r.modalManager.SetLoading("loading comments...")
+		cmds = append(cmds, cmd)
 
 	case messages.OpenUrlMsg:
 		url := string(msg)
 		if err := utils.OpenUrl(url); err != nil {
 			slog.Error("Error opening url in browser", "url", url, "error", err.Error())
-			errorMsg := fmt.Sprintf("Could not open url %s in browser", url)
-			cmds = append(cmds, messages.ShowErrorModal(errorMsg))
+			cmd = r.modalManager.SetError(fmt.Sprintf("Could not open url %s in browser", url))
+			cmds = append(cmds, cmd)
 		}
 
 	case messages.ErrorMsg:
-		cmds = append(cmds, messages.ShowErrorModal(string(msg)))
+		cmd = r.modalManager.SetError(string(msg))
+		cmds = append(cmds, cmd)
 
 	case tea.WindowSizeMsg:
 		r.homePage.SetSize(msg.Width, msg.Height)
@@ -172,7 +182,7 @@ func (r RedditTui) View() string {
 		return r.commentsPage.View()
 	}
 
-	panic("Unexpected page")
+	return ""
 }
 
 func (r *RedditTui) goBack() {
@@ -195,6 +205,7 @@ func (r *RedditTui) setPage(page pageType) {
 }
 
 func (r *RedditTui) completeLoading() {
+	r.initializing = false
 	r.popup = false
 	r.setPage(r.loadingPage)
 	r.focusActivePage()

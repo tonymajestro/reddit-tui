@@ -24,7 +24,6 @@ func (r RedditCommentsClient) GetComments(url string) (comments model.Comments, 
 	comments, err = r.Cache.Get(url)
 	if err == nil {
 		// return cached data
-		slog.Info("Cache hit")
 		return comments, nil
 	}
 

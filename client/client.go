@@ -102,12 +102,12 @@ func getMaxAge(res *http.Response) (maxAge time.Duration, err error) {
 	cacheHeader := strings.Join(res.Header[cacheControlHeader], ";")
 	parts := strings.Split(cacheHeader, "=")
 	if len(parts) != 2 {
-		return maxAge, errParsingCacheHeaders
+		return maxAge, ErrParsingCacheHeaders
 	}
 
 	maxAgeSeconds, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return maxAge, errParsingCacheHeaders
+		return maxAge, ErrParsingCacheHeaders
 	}
 
 	maxAge = time.Duration(maxAgeSeconds) * time.Second
