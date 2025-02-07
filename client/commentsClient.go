@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reddittui/client/cache"
 	"reddittui/model"
+	"reddittui/utils"
 	"regexp"
 	"strings"
 	"time"
@@ -34,7 +35,9 @@ func (r RedditCommentsClient) GetComments(url string) (comments model.Comments, 
 	}
 	req.Header.Add(userAgentKey, userAgentValue)
 
+	timer := utils.NewTimer("fetching comments")
 	res, err := r.Client.Do(req)
+	timer.StopAndLog("url", url)
 	if err != nil {
 		return comments, err
 	}
@@ -45,11 +48,14 @@ func (r RedditCommentsClient) GetComments(url string) (comments model.Comments, 
 		slog.Error("Error getting cache headers from response", "error", err.Error(), "url", url)
 	}
 
+	timer = utils.NewTimer("parsing comments html")
 	doc, err := html.Parse(res.Body)
+	timer.StopAndLog()
 	if err != nil {
 		return comments, err
 	}
 
+	timer = utils.NewTimer("converting comments html")
 	comments = parseComments(HtmlNode{doc}, url)
 	comments.Expiry = time.Now().Add(maxAge)
 

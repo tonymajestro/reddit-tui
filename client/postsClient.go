@@ -7,6 +7,7 @@ import (
 	"reddittui/client/cache"
 	"reddittui/client/common"
 	"reddittui/model"
+	"reddittui/utils"
 	"strings"
 	"time"
 
@@ -60,7 +61,10 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 
 	req.Header.Add(userAgentKey, userAgentValue)
 
+	timer := utils.NewTimer("fetching posts")
 	res, err := r.Client.Do(req)
+	timer.StopAndLog("url", url)
+
 	if err != nil {
 		return posts, err
 	} else if res.StatusCode != http.StatusOK {
@@ -75,12 +79,16 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 		slog.Error("Error getting cache headers from response", "error", err.Error(), "url", url)
 	}
 
+	timer = utils.NewTimer("parsing posts html")
 	doc, err := html.Parse(res.Body)
+	timer.StopAndLog()
 	if err != nil {
 		return posts, err
 	}
 
+	timer = utils.NewTimer("converting posts html")
 	posts = createPosts(HtmlNode{doc})
+	timer.StopAndLog()
 	if len(posts.Posts) == 0 {
 		// if there are no posts, assume 404.
 		// reddit redirect invalid subreddits requests to some search page instead of doing 404

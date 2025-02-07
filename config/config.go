@@ -18,15 +18,18 @@ const defaultConfiguration = `
 #
 
 # bypassCache = false
+# logLevel = Info
 `
 
 type Config struct {
-	BypassCache bool
+	BypassCache bool   `toml:"bypassCache"`
+	LogLevel    string `toml:"logLevel"`
 }
 
 func NewConfig() Config {
 	return Config{
 		BypassCache: false,
+		LogLevel:    "Info",
 	}
 }
 
@@ -73,6 +76,10 @@ func LoadConfig() (Config, error) {
 func mergeConfig(left, right Config, meta toml.MetaData) Config {
 	if meta.IsDefined("bypassCache") {
 		left.BypassCache = right.BypassCache
+	}
+
+	if meta.IsDefined("logLevel") {
+		left.LogLevel = right.LogLevel
 	}
 
 	return left
