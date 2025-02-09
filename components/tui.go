@@ -39,7 +39,7 @@ type RedditTui struct {
 }
 
 func NewRedditTui(configuration config.Config) RedditTui {
-	redditClient := client.NewRedditClient(configuration.BypassCache)
+	redditClient := client.NewRedditClient(configuration)
 
 	homePage := posts.NewPostsPage(redditClient, true)
 	subredditPage := posts.NewPostsPage(redditClient, false)

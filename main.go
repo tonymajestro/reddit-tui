@@ -14,11 +14,12 @@ import (
 func main() {
 	configuration, _ := config.LoadConfig()
 
-	logFile, err := utils.InitLogger(configuration.LogLevel)
+	logFile, err := utils.InitLogger(configuration.Core.LogLevel)
 	if err != nil {
 		fmt.Printf("Could not open logfile: %v\n", err)
-		defer logFile.Close()
 	}
+
+	defer logFile.Close()
 
 	reddit := components.NewRedditTui(configuration)
 	p := tea.NewProgram(reddit, tea.WithAltScreen())

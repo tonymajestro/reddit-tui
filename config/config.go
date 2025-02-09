@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,25 +12,29 @@ import (
 
 const configFilename = "reddit-tui.toml"
 
-const defaultConfiguration = `
-#
-# Default configuration for reddit-tui.
-# Uncomment to configure
-#
-
-# bypassCache = false
-# logLevel = Info
-`
-
 type Config struct {
-	BypassCache bool   `toml:"bypassCache"`
-	LogLevel    string `toml:"logLevel"`
+	Core   CoreConfig   `toml:"core"`
+	Filter FilterConfig `toml:"filter"`
+}
+
+type CoreConfig struct {
+	BypassCache   bool
+	LogLevel      string
+	ClientTimeout int
+}
+
+type FilterConfig struct {
+	Keywords   []string
+	Subreddits []string
 }
 
 func NewConfig() Config {
 	return Config{
-		BypassCache: false,
-		LogLevel:    "Info",
+		Core: CoreConfig{
+			BypassCache:   false,
+			LogLevel:      "Info",
+			ClientTimeout: 10,
+		},
 	}
 }
 
@@ -69,17 +74,30 @@ func LoadConfig() (Config, error) {
 	}
 
 	mergedConfig := mergeConfig(defaultConfig, configFromFile, meta)
+	slog.Info(fmt.Sprintf("config: %v", mergedConfig))
 	return mergedConfig, err
 }
 
 // Merge right config into left
 func mergeConfig(left, right Config, meta toml.MetaData) Config {
-	if meta.IsDefined("bypassCache") {
-		left.BypassCache = right.BypassCache
+	if meta.IsDefined("core", "bypassCache") {
+		left.Core.BypassCache = right.Core.BypassCache
 	}
 
-	if meta.IsDefined("logLevel") {
-		left.LogLevel = right.LogLevel
+	if meta.IsDefined("core", "logLevel") {
+		left.Core.LogLevel = right.Core.LogLevel
+	}
+
+	if meta.IsDefined("core", "kclientTimeout") {
+		left.Core.ClientTimeout = right.Core.ClientTimeout
+	}
+
+	if meta.IsDefined("filter", "keywords") {
+		left.Filter.Keywords = right.Filter.Keywords
+	}
+
+	if meta.IsDefined("filter", "subreddits") {
+		left.Filter.Subreddits = right.Filter.Subreddits
 	}
 
 	return left

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reddittui/client/cache"
+	"reddittui/config"
 	"reddittui/model"
 	"reddittui/utils"
 	"strconv"
@@ -27,18 +28,19 @@ const (
 type RedditClient struct {
 	postsClient    RedditPostsClient
 	commentsClient RedditCommentsClient
-	bypassCache    bool
 }
 
-func NewRedditClient(bypassCache bool) RedditClient {
+func NewRedditClient(configuration config.Config) RedditClient {
 	httpClient := &http.Client{
-		Timeout: time.Duration(10) * time.Second,
+		Timeout: time.Duration(configuration.Core.ClientTimeout) * time.Second,
 	}
 
-	postsCache, commentsCache := InitializeCaches(bypassCache)
+	postsCache, commentsCache := InitializeCaches(configuration.Core.BypassCache)
 	postsClient := RedditPostsClient{
-		Client: httpClient,
-		Cache:  postsCache,
+		Client:           httpClient,
+		Cache:            postsCache,
+		KeywordFilters:   configuration.Filter.Keywords,
+		SubredditFilters: configuration.Filter.Subreddits,
 	}
 	commentsClient := RedditCommentsClient{
 		Client: httpClient,
@@ -48,7 +50,6 @@ func NewRedditClient(bypassCache bool) RedditClient {
 	return RedditClient{
 		postsClient,
 		commentsClient,
-		bypassCache,
 	}
 }
 

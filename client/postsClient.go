@@ -17,8 +17,10 @@ import (
 var ErrParsingCacheHeaders = errors.New("could not parse cache-control header")
 
 type RedditPostsClient struct {
-	Client *http.Client
-	Cache  cache.PostsCache
+	Client           *http.Client
+	Cache            cache.PostsCache
+	KeywordFilters   []string
+	SubredditFilters []string
 }
 
 func (r RedditPostsClient) GetHomePosts() (model.Posts, error) {
@@ -41,7 +43,7 @@ func (r RedditPostsClient) tryGetCachedPosts(postsUrl string) (posts model.Posts
 	posts, err = r.Cache.Get(postsUrl)
 	if err == nil {
 		// return cached data
-		return posts, nil
+		return r.filterPosts(posts), nil
 	}
 
 	posts, err = r.getPosts(postsUrl)
@@ -49,6 +51,7 @@ func (r RedditPostsClient) tryGetCachedPosts(postsUrl string) (posts model.Posts
 		return posts, err
 	}
 
+	posts = r.filterPosts(posts)
 	r.Cache.Put(posts, postsUrl)
 	return posts, nil
 }
@@ -98,6 +101,33 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 
 	posts.Expiry = time.Now().Add(maxAge)
 	return posts, nil
+}
+
+func (r RedditPostsClient) filterPosts(posts model.Posts) model.Posts {
+	var filteredPosts []model.Post
+
+outer:
+	for _, post := range posts.Posts {
+		for _, keyword := range r.KeywordFilters {
+			if strings.Contains(strings.ToLower(post.PostTitle), strings.ToLower(keyword)) {
+				slog.Debug("filtering post", "title", post.PostTitle)
+				continue outer
+			}
+		}
+
+		for _, subreddit := range r.SubredditFilters {
+			subreddit = utils.NormalizeSubreddit(subreddit)
+			if strings.EqualFold(post.Subreddit, subreddit) {
+				slog.Debug("filtering post", "title", post.PostTitle)
+				continue outer
+			}
+		}
+
+		filteredPosts = append(filteredPosts, post)
+	}
+
+	posts.Posts = filteredPosts
+	return posts
 }
 
 func createPosts(root HtmlNode) model.Posts {
