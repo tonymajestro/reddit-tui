@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -74,7 +73,6 @@ func LoadConfig() (Config, error) {
 	}
 
 	mergedConfig := mergeConfig(defaultConfig, configFromFile, meta)
-	slog.Info(fmt.Sprintf("config: %v", mergedConfig))
 	return mergedConfig, err
 }
 
