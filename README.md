@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/40d61ef3-3a95-4a26-8c49-bec616f6ae1c
 Clone the repository and run the install script: 
 
 ```bash
-git clone https://github.com/tonymajestro/reddit-tui reddittui
+git clone https://github.com/tonymajestro/reddit-tui.git reddittui
 cd reddittui
 ./install.sh
 ```
@@ -36,10 +36,15 @@ reddittui
 - Navigation
   - **h, j, k, l:** vim movement
   - **left, right, up, down:** normal movement
-- Other
+- Posts page
   - **s**: Switch subreddits
-  - **c**: Collapse comments on comments page
+- Comments page
+  - **o**: Open post link in browser
+  - **c**: Collapse comments
+- Misc
   - **H:** Go to home page
+  - **backspace**: Go back
+  - **q, esc**: Exit reddittui
 
 ## Configuration
 After running the reddittui binary, a configuration file will be created at **~/.config/reddittui/reddittui.toml**. Example configuration file:
