@@ -58,8 +58,8 @@ clientTimeout = 10
 
 # Filter out posts containing keywords or belonging to certain subreddits
 [filter]
-subreddits = ["news", "politics", "videogames"]
-keywords = ["trump", "nazi", "pizza"]
+subreddits = ["news", "politics"]
+keywords = ["pizza", "pineapple"]
 ```
 
 ## Acknowledgments
