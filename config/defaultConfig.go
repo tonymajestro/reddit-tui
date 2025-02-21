@@ -2,7 +2,7 @@ package config
 
 const defaultConfiguration = `
 #
-# Default configuration for reddit-tui.
+# Default configuration for reddittui.
 # Uncomment to configure
 #
 

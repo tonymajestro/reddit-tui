@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	appName          = "reddit-tui"
+	appName          = "reddittui"
 	defaultConfigDir = ".config"
 	defaultStateDir  = ".local/state"
 	defaultCacheDir  = ".cache"
-	logFileName      = "reddit-tui.log"
+	logFileName      = "reddittui.log"
 )
 
 func GetConfigDir() (string, error) {

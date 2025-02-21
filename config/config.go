@@ -9,7 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const configFilename = "reddit-tui.toml"
+const configFilename = "reddittui.toml"
 
 type Config struct {
 	Core   CoreConfig   `toml:"core"`

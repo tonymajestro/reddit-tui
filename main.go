@@ -25,7 +25,7 @@ func main() {
 	p := tea.NewProgram(reddit, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {
-		slog.Error("Error running reddit-tui", "error", err)
+		slog.Error("Error running reddittui", "error", err)
 		os.Exit(1)
 	}
 }
