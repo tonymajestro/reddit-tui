@@ -42,22 +42,17 @@ reddittui
   - **H:** Go to home page
 
 ## Configuration
-After running the reddittui binary, a configuration file will be created at ~/.config/reddittui/reddittui.toml. Example configuration file:
+After running the reddittui binary, a configuration file will be created at **~/.config/reddittui/reddittui.toml**. Example configuration file:
 
 ```toml
 # Core configuration
 [core]
 bypassCache = false
-logLevel = "Info"
+logLevel = "Debug"
 clientTimeout = 10
-
 
 # Filter out posts containing keywords or belonging to certain subreddits
 [filter]
-subreddits = ["mildlyinteresting", "technology"]
-keywords = ["breaking", "news"]
-
-# Cache settings
-[cache]
-workers = 4
+subreddits = ["news", "politics", "videogames"]
+keywords = ["trump", "nazi", "pizza"]
 ```
