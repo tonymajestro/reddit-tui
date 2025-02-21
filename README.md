@@ -1,5 +1,5 @@
 # Reddittui
-A lightweight terminal application for browsing Reddit from your command line.
+A lightweight terminal application for browsing Reddit from your command line. Powered by [bubbletea](https://github.com/charmbracelet/bubbletea)
 
 ## Features
 - **Subreddit Browsing:** Navigate through your favorite subreddits.
@@ -56,3 +56,6 @@ clientTimeout = 10
 subreddits = ["news", "politics", "videogames"]
 keywords = ["trump", "nazi", "pizza"]
 ```
+
+## Acknowledgments
+Reddittui is based on the [bubbletea](https://github.com/charmbracelet/bubbletea) framework. It also takes inspiration from [circumflex](https://github.com/bensadeh/circumflex), a hackernews terminal browser.
