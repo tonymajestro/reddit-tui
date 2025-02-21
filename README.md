@@ -1,11 +1,10 @@
-# Reddit terminal browser
-A lightweight terminal application that allows you to browse Reddit directly from your command line. Explore subreddits, read posts, and view comments without leaving your terminal.
+# Reddittui
+A lightweight terminal application for browsing Reddit from your command line.
 
 ## Features
 - **Subreddit Browsing:** Navigate through your favorite subreddits.
 - **Post Viewing:** Read text posts and comments.
-- **Keyboard Navigation:** Easily scroll and select posts using vim/standard keyboard shortcuts.
-- **Lightweight & Fast:** Enjoy a minimalistic interface without the overhead of a web browser.
+- **Keyboard Navigation:** Scroll and select posts using vim/standard keyboard shortcuts.
 - **Configurable**: Customize caching behavior and define subreddit filters using a configuration file
 
 ## Demo
@@ -13,7 +12,7 @@ https://github.com/user-attachments/assets/40d61ef3-3a95-4a26-8c49-bec616f6ae1c
 
 ## Prerequisites
 
-- **Go:** Version 1.16 or newer is required to build the application.
+- **Go:** Version 1.16 or newer
 - **Terminal:** A Unix-like terminal (Linux, macOS, or similar).
 - **POSIX Utilities:** The `install` command is used for installation, which is available on both Linux and macOS.
 
