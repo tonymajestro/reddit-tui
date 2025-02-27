@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"reddittui/client/cache"
+	"reddittui/client/common"
 	"reddittui/model"
 	"reddittui/utils"
 	"regexp"
@@ -40,6 +41,11 @@ func (r RedditCommentsClient) GetComments(url string) (comments model.Comments, 
 	timer.StopAndLog("url", url)
 	if err != nil {
 		return comments, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		slog.Error("Error fetching comments page", "StatusCode", res.StatusCode)
+		return comments, common.ErrNotFound
 	}
 
 	defer res.Body.Close()

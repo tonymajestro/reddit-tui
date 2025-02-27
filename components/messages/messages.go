@@ -6,10 +6,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type ErrorModalMsg struct {
+	ErrorMsg string
+	OnClose  tea.Cmd
+}
+
 type (
 	InitMsg            struct{}
 	GoBackMsg          struct{}
-	LoadCommentsMsg    model.Post
+	LoadCommentsMsg    string
 	LoadHomeMsg        struct{}
 	LoadSubredditMsg   string
 	UpdateCommentsMsg  model.Comments
@@ -20,8 +25,7 @@ type (
 	ExitModalMsg        struct{}
 	ShowSpinnerModalMsg string
 
-	ErrorMsg          string
-	ShowErrorModalMsg string
+	ShowErrorModalMsg ErrorModalMsg
 
 	OpenUrlMsg string
 )
@@ -44,9 +48,9 @@ func LoadSubreddit(subreddit string) tea.Cmd {
 	}
 }
 
-func LoadComments(post model.Post) tea.Cmd {
+func LoadComments(url string) tea.Cmd {
 	return func() tea.Msg {
-		return LoadCommentsMsg(post)
+		return LoadCommentsMsg(url)
 	}
 }
 
@@ -68,15 +72,15 @@ func ShowSpinnerModal(loadingMsg string) tea.Cmd {
 	}
 }
 
-func Error(errorMsg string) tea.Cmd {
+func ShowErrorModal(errorMsg string) tea.Cmd {
 	return func() tea.Msg {
-		return ErrorMsg(errorMsg)
+		return ShowErrorModalMsg{ErrorMsg: errorMsg}
 	}
 }
 
-func ShowErrorModal(errorMsg string) tea.Cmd {
+func ShowErrorModalWithCallback(errorMsg string, callback tea.Cmd) tea.Cmd {
 	return func() tea.Msg {
-		return ShowErrorModalMsg(errorMsg)
+		return ShowErrorModalMsg{ErrorMsg: errorMsg, OnClose: callback}
 	}
 }
 

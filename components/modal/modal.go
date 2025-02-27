@@ -1,6 +1,7 @@
 package modal
 
 import (
+	"fmt"
 	"log/slog"
 	"reddittui/components/colors"
 	"reddittui/components/messages"
@@ -33,6 +34,7 @@ type ModalManager struct {
 	errorModal ErrorModal
 	state      SessionState
 	style      lipgloss.Style
+	onClose    tea.Cmd
 }
 
 func NewModalManager() ModalManager {
@@ -76,8 +78,8 @@ func (m ModalManager) handleGlobalMessages(msg tea.Msg) (ModalManager, tea.Cmd) 
 		return m, m.SetLoading(loadingMsg)
 
 	case messages.ShowErrorModalMsg:
-		slog.Warn("Showing error modal")
-		return m, m.SetError(string(msg))
+		slog.Info(fmt.Sprintf("errormsg: %v, %v", msg.ErrorMsg, msg.OnClose))
+		return m, m.SetErrorWithCallback(msg.ErrorMsg, msg.OnClose)
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -137,9 +139,13 @@ func (m *ModalManager) SetSize(w, h int) {
 	m.style = m.style.MaxWidth(modalSize)
 }
 
-func (m *ModalManager) Blur() {
+func (m *ModalManager) Blur() tea.Cmd {
 	m.state = defaultState
 	m.search.Blur()
+
+	onClose := m.onClose
+	m.onClose = nil
+	return onClose
 }
 
 func (m *ModalManager) SetLoading(message string) tea.Cmd {
@@ -161,6 +167,13 @@ func (m *ModalManager) SetQuitting() tea.Cmd {
 
 func (m *ModalManager) SetError(errorMsg string) tea.Cmd {
 	m.state = showingError
+	m.errorModal.ErrorMsg = errorMsg
+	return messages.OpenModal
+}
+
+func (m *ModalManager) SetErrorWithCallback(errorMsg string, onClose tea.Cmd) tea.Cmd {
+	m.state = showingError
+	m.onClose = onClose
 	m.errorModal.ErrorMsg = errorMsg
 	return messages.OpenModal
 }

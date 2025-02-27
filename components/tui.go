@@ -36,9 +36,10 @@ type RedditTui struct {
 	page          pageType
 	prevPage      pageType
 	loadingPage   pageType
+	initCmd       tea.Cmd
 }
 
-func NewRedditTui(configuration config.Config) RedditTui {
+func NewRedditTui(configuration config.Config, subreddit, postId string) RedditTui {
 	redditClient := client.NewRedditClient(configuration)
 
 	homePage := posts.NewPostsPage(redditClient, true)
@@ -53,11 +54,23 @@ func NewRedditTui(configuration config.Config) RedditTui {
 		commentsPage:  commentsPage,
 		modalManager:  modalManager,
 		initializing:  true,
+		initCmd:       getInitCmd(subreddit, postId),
+	}
+}
+
+func getInitCmd(subreddit, postId string) tea.Cmd {
+	if len(subreddit) != 0 {
+		return messages.LoadSubreddit(subreddit)
+	} else if len(postId) != 0 {
+		url := client.GetPostUrl(postId)
+		return messages.LoadComments(url)
+	} else {
+		return messages.LoadHome
 	}
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	return messages.LoadHome
+	return r.initCmd
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -68,8 +81,22 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case messages.ShowErrorModalMsg:
-		if r.initializing {
-			panic("Error: could not initialize home page")
+		if r.initializing && msg.OnClose == nil {
+			slog.Info("Error during initialization")
+			if r.loadingPage == HomePage {
+				errorMsg := "Could not initialize reddittui. Check the logfile for details."
+				return r, messages.ShowErrorModalWithCallback(errorMsg, tea.Quit)
+			}
+			slog.Info("Not home page")
+
+			var errorMsg string
+			if r.loadingPage == SubredditPage {
+				errorMsg = "Error loading subreddit. Returning to home page..."
+			} else {
+				errorMsg = "Error loading post. Returning to home page..."
+			}
+
+			return r, messages.ShowErrorModalWithCallback(errorMsg, messages.LoadHome)
 		}
 
 	case messages.OpenModalMsg:
@@ -77,20 +104,21 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case messages.LoadingCompleteMsg:
-		r.completeLoading()
-		return r, nil
+		return r, r.completeLoading()
 
 	case messages.ExitModalMsg:
 		r.popup = false
 		r.focusActivePage()
-		r.modalManager.Blur()
-		return r, nil
+		cmd := r.modalManager.Blur()
+		slog.Info(fmt.Sprintf("%v", cmd))
+		return r, cmd
 
 	case messages.GoBackMsg:
 		r.goBack()
 		return r, nil
 
 	case messages.LoadHomeMsg:
+		slog.Info("Loading home page")
 		if r.page == HomePage && !r.initializing {
 			return r, nil
 		}
@@ -128,10 +156,6 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = r.modalManager.SetError(fmt.Sprintf("Could not open url %s in browser", url))
 			cmds = append(cmds, cmd)
 		}
-
-	case messages.ErrorMsg:
-		cmd = r.modalManager.SetError(string(msg))
-		cmds = append(cmds, cmd)
 
 	case tea.WindowSizeMsg:
 		r.homePage.SetSize(msg.Width, msg.Height)
@@ -204,12 +228,12 @@ func (r *RedditTui) setPage(page pageType) {
 	r.page, r.prevPage = page, r.page
 }
 
-func (r *RedditTui) completeLoading() {
+func (r *RedditTui) completeLoading() tea.Cmd {
 	r.initializing = false
 	r.popup = false
 	r.setPage(r.loadingPage)
 	r.focusActivePage()
-	r.modalManager.Blur()
+	return r.modalManager.Blur()
 }
 
 func (r *RedditTui) focusModal() {

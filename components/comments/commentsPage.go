@@ -56,7 +56,8 @@ func (c CommentsPage) Update(msg tea.Msg) (CommentsPage, tea.Cmd) {
 func (c CommentsPage) handleGlobalMessages(msg tea.Msg) (CommentsPage, tea.Cmd) {
 	switch msg := msg.(type) {
 	case messages.LoadCommentsMsg:
-		return c, c.loadComments(msg.CommentsUrl)
+		url := string(msg)
+		return c, c.loadComments(url)
 	case messages.UpdateCommentsMsg:
 		c.updateComments(model.Comments(msg))
 		return c, messages.LoadingComplete
@@ -122,7 +123,7 @@ func (c *CommentsPage) loadComments(url string) tea.Cmd {
 		comments, err := c.redditClient.GetComments(url)
 		if err != nil {
 			slog.Error(commentsErrorText, "error", err)
-			return messages.ShowErrorModalMsg(commentsErrorText)
+			return messages.ShowErrorModalMsg{ErrorMsg: commentsErrorText}
 		}
 
 		return messages.UpdateCommentsMsg(comments)

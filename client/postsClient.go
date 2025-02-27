@@ -24,13 +24,13 @@ type RedditPostsClient struct {
 }
 
 func (r RedditPostsClient) GetHomePosts() (model.Posts, error) {
-	posts, err := r.tryGetCachedPosts(homeUrl)
+	posts, err := r.tryGetCachedPosts(GetHomeUrl())
 	posts.IsHome = true
 	return posts, err
 }
 
 func (r RedditPostsClient) GetSubredditPosts(subreddit string) (model.Posts, error) {
-	postsUrl := subredditUrl + subreddit
+	postsUrl := GetSubredditUrl(subreddit)
 	posts, err := r.tryGetCachedPosts(postsUrl)
 	posts.Subreddit = subreddit
 

@@ -15,8 +15,6 @@ import (
 )
 
 const (
-	homeUrl              = "https://old.reddit.com"
-	subredditUrl         = "https://old.reddit.com/r/"
 	defaultTitle         = "reddit.com"
 	userAgentKey         = "User-Agent"
 	userAgentValue       = "Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0"

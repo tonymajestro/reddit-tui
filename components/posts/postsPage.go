@@ -107,7 +107,7 @@ func (p PostsPage) handleFocusedMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 		case "enter", "right", "l":
 			loadCommentsCmd := func() tea.Msg {
 				post := p.posts[p.list.Index()]
-				return messages.LoadCommentsMsg(post)
+				return messages.LoadCommentsMsg(post.CommentsUrl)
 			}
 
 			return p, loadCommentsCmd
@@ -172,7 +172,7 @@ func (p *PostsPage) loadHome() tea.Cmd {
 		posts, err := p.redditClient.GetHomePosts()
 		if err != nil {
 			slog.Error(postsErrorText, "error", err)
-			return messages.ShowErrorModalMsg(postsErrorText)
+			return messages.ShowErrorModalMsg{ErrorMsg: postsErrorText}
 		}
 
 		return messages.UpdatePostsMsg(posts)
@@ -184,10 +184,10 @@ func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
 		posts, err := p.redditClient.GetSubredditPosts(subreddit)
 		if err == common.ErrNotFound {
 			slog.Error(subredditNotFoundText, "error", err, "subreddit", subreddit)
-			return messages.ShowErrorModalMsg(fmt.Sprintf("%s: %s", subredditNotFoundText, subreddit))
+			return messages.ShowErrorModalMsg{ErrorMsg: fmt.Sprintf("%s: %s", subredditNotFoundText, subreddit)}
 		} else if err != nil {
 			slog.Error(postsErrorText, "error", err)
-			return messages.ShowErrorModalMsg(postsErrorText)
+			return messages.ShowErrorModalMsg{ErrorMsg: postsErrorText}
 		}
 
 		return messages.UpdatePostsMsg(posts)
