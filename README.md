@@ -29,7 +29,14 @@ cd reddittui
 Run the installed binary from your preferred terminal:
 
 ```bash
+# Open reddittui, navigating to the home page
 reddittui
+
+# Open reddittui, navigating to a specific subreddit
+reddittui --subreddit dogs
+
+# Open reddittui, navigating to a specific post by its ID
+reddittui --post 1iyuce4
 ```
 
 ## Keybindings
