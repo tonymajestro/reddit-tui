@@ -29,6 +29,10 @@ func NewFileCommentsCache(cacheDir string) FileCommentsCache {
 // Returns comments if they are present and not expired
 func (f FileCommentsCache) Get(filename string) (comments model.Comments, err error) {
 	subreddit := f.GetSubredditFromUrl(filename)
+	if len(subreddit) == 0 {
+		return comments, common.ErrNotFound
+	}
+
 	sanitizedFilename := url.QueryEscape(filename) + ".json"
 	cacheFilePath := filepath.Join(f.CacheBaseDir, subreddit, sanitizedFilename)
 
@@ -93,6 +97,10 @@ func (f FileCommentsCache) Put(comments model.Comments, filename string) error {
 
 func (f FileCommentsCache) GetSubredditFromUrl(commentsUrl string) string {
 	part := "https://old.reddit.com/r/"
+	if !strings.Contains(commentsUrl, part) {
+		return ""
+	}
+
 	subreddit := commentsUrl[len(part):]
 	if strings.Contains(subreddit, "/") {
 		subreddit = subreddit[:strings.Index(subreddit, "/")]
