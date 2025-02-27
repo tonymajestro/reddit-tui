@@ -39,7 +39,7 @@ type RedditTui struct {
 	initCmd       tea.Cmd
 }
 
-func NewRedditTui(configuration config.Config, subreddit, postId string) RedditTui {
+func NewRedditTui(configuration config.Config, subreddit, post string) RedditTui {
 	redditClient := client.NewRedditClient(configuration)
 
 	homePage := posts.NewPostsPage(redditClient, true)
@@ -54,15 +54,15 @@ func NewRedditTui(configuration config.Config, subreddit, postId string) RedditT
 		commentsPage:  commentsPage,
 		modalManager:  modalManager,
 		initializing:  true,
-		initCmd:       getInitCmd(subreddit, postId),
+		initCmd:       getInitCmd(subreddit, post),
 	}
 }
 
-func getInitCmd(subreddit, postId string) tea.Cmd {
+func getInitCmd(subreddit, post string) tea.Cmd {
 	if len(subreddit) != 0 {
 		return messages.LoadSubreddit(subreddit)
-	} else if len(postId) != 0 {
-		url := client.GetPostUrl(postId)
+	} else if len(post) != 0 {
+		url := client.GetPostUrl(post)
 		return messages.LoadComments(url)
 	} else {
 		return messages.LoadHome
