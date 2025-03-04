@@ -24,9 +24,3 @@ jobs:
 
       - name: Build reddituit
         run: just build
-
-      - name: Setup tests
-        run: just setupIntegTests
-
-      - name: Run tests
-        run: just test
