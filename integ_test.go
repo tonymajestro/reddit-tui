@@ -15,7 +15,7 @@ const testTimeout = 20 * time.Second
 
 var testConf = config.Config{
 	Core: config.CoreConfig{
-		BypassCache:   true,
+		BypassCache:   false,
 		LogLevel:      "Warn",
 		ClientTimeout: int(testTimeout.Seconds()),
 	},

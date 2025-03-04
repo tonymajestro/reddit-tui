@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/charmbracelet/bubbletea v1.2.4
+	github.com/charmbracelet/x/exp/teatest v0.0.0-20250303111204-ce812b082f54
 	github.com/muesli/reflow v0.3.0
 	golang.org/x/net v0.34.0
 )
@@ -11,7 +12,6 @@ require (
 require (
 	github.com/aymanbagabas/go-udiff v0.2.0 // indirect
 	github.com/charmbracelet/x/exp/golden v0.0.0-20240815200342-61de596daa2b // indirect
-	github.com/charmbracelet/x/exp/teatest v0.0.0-20250303111204-ce812b082f54 // indirect
 )
 
 require (
