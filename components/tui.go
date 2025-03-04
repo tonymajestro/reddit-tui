@@ -82,12 +82,11 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case messages.ShowErrorModalMsg:
 		if r.initializing && msg.OnClose == nil {
-			slog.Info("Error during initialization")
+			slog.Error("Error during initialization")
 			if r.loadingPage == HomePage {
 				errorMsg := "Could not initialize reddittui. Check the logfile for details."
 				return r, messages.ShowErrorModalWithCallback(errorMsg, tea.Quit)
 			}
-			slog.Info("Not home page")
 
 			var errorMsg string
 			if r.loadingPage == SubredditPage {
@@ -110,7 +109,6 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		r.popup = false
 		r.focusActivePage()
 		cmd := r.modalManager.Blur()
-		slog.Info(fmt.Sprintf("%v", cmd))
 		return r, cmd
 
 	case messages.GoBackMsg:
@@ -118,7 +116,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case messages.LoadHomeMsg:
-		slog.Info("Loading home page")
+		slog.Debug("Loading home page")
 		if r.page == HomePage && !r.initializing {
 			return r, nil
 		}

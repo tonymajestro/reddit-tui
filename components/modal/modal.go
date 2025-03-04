@@ -1,8 +1,6 @@
 package modal
 
 import (
-	"fmt"
-	"log/slog"
 	"reddittui/components/colors"
 	"reddittui/components/messages"
 
@@ -78,7 +76,6 @@ func (m ModalManager) handleGlobalMessages(msg tea.Msg) (ModalManager, tea.Cmd) 
 		return m, m.SetLoading(loadingMsg)
 
 	case messages.ShowErrorModalMsg:
-		slog.Info(fmt.Sprintf("errormsg: %v, %v", msg.ErrorMsg, msg.OnClose))
 		return m, m.SetErrorWithCallback(msg.ErrorMsg, msg.OnClose)
 
 	case tea.KeyMsg:
