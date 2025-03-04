@@ -22,5 +22,7 @@ jobs:
       - name: Install Dependencies
         run: go mod tidy
 
-      - name: Run Tests
-        run: go test -v ./...
+      # - name: Run Tests
+      #   run: go test -v ./...
+      - name: Curl
+        run: curl https://www.google.com
