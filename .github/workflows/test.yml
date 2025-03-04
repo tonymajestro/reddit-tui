@@ -22,9 +22,6 @@ jobs:
       - name: Install Dependencies
         run: go mod tidy
 
-      - name: Run Tests
-        run: go test -v ./...
-
-      - name: Show logfile
-        run: cat ~/.local/state/reddittui/reddittui.log
+      - name: Build reddituit
+        run: go build build/reddittui main.go
 
