@@ -23,5 +23,5 @@ jobs:
         run: go mod tidy
 
       - name: Build reddituit
-        run: go build build/reddittui main.go
+        run: go build -o build/reddittui main.go
 
