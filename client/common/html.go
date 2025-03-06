@@ -1,4 +1,4 @@
-package client
+package common
 
 import (
 	"fmt"
@@ -11,12 +11,19 @@ import (
 	"golang.org/x/net/html"
 )
 
-var (
-	hyperLinkStyle     = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
-	linkPostTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(colors.AdaptiveColor(colors.Text))
+const (
+	UserAgentHeaderKey   = "User-Agent"
+	UserAgentHeaderValue = "Mozilla/5.0 (X11; Linux x86_64; rv:134.0) Gecko/20100101 Firefox/134.0"
+	CacheControlHeader   = "Cache-Control"
+	CommentsCacheDirName = "comments"
 )
 
-const limitQueryParameter = "limit=500"
+var (
+	HyperLinkStyle     = lipgloss.NewStyle().Foreground(colors.AdaptiveColor(colors.Blue)).Italic(true)
+	LinkPostTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(colors.AdaptiveColor(colors.Text))
+)
+
+const LimitQueryParameter = "limit=500"
 
 type HtmlNode struct {
 	*html.Node
@@ -47,6 +54,10 @@ func (n HtmlNode) Classes() []string {
 
 func (n HtmlNode) Class() string {
 	return n.GetAttr("class")
+}
+
+func (n HtmlNode) Id() string {
+	return n.GetAttr("id")
 }
 
 func (n HtmlNode) ClassContains(classesToFind ...string) bool {
@@ -81,6 +92,10 @@ func (n HtmlNode) NodeEquals(tag string, classes ...string) bool {
 	return n.TagEquals(tag) && n.ClassContains(classes...)
 }
 
+func (n HtmlNode) NodeEqualsById(tag string, id string) bool {
+	return n.TagEquals(tag) && n.Id() == id
+}
+
 func (n HtmlNode) FindDescendant(tag string, classes ...string) (HtmlNode, bool) {
 	var descendant HtmlNode
 
@@ -89,6 +104,21 @@ func (n HtmlNode) FindDescendant(tag string, classes ...string) (HtmlNode, bool)
 		if len(classes) == 0 && descendant.TagEquals(tag) {
 			return descendant, true
 		} else if descendant.NodeEquals(tag, classes...) {
+			return descendant, true
+		}
+	}
+
+	return descendant, false
+}
+
+func (n HtmlNode) FindDescendantById(tag string, id string) (HtmlNode, bool) {
+	var descendant HtmlNode
+
+	for c := range n.Descendants() {
+		descendant = HtmlNode{c}
+		if id == "" && descendant.TagEquals(tag) {
+			return descendant, true
+		} else if descendant.NodeEqualsById(tag, id) {
 			return descendant, true
 		}
 	}
@@ -147,25 +177,25 @@ func (n HtmlNode) FindChildren(tag string, classes ...string) iter.Seq[HtmlNode]
 	}
 }
 
-func renderAnchor(node HtmlNode) string {
+func RenderAnchor(node HtmlNode) string {
 	var (
 		url      = node.GetAttr("href")
 		linkText = node.Text()
 	)
 
 	if !strings.HasPrefix(url, "http") && !strings.HasPrefix(url, "www") {
-		return hyperLinkStyle.Render(linkText)
+		return HyperLinkStyle.Render(linkText)
 	} else if url == linkText {
-		return hyperLinkStyle.Render(linkText)
+		return HyperLinkStyle.Render(linkText)
 	}
 
 	return fmt.Sprintf(
 		"%s %s",
 		linkText,
-		hyperLinkStyle.Render(url))
+		HyperLinkStyle.Render(url))
 }
 
-func addQueryParameter(url, query string) string {
+func AddQueryParameter(url, query string) string {
 	if strings.Contains(url, "?") {
 		return fmt.Sprintf("%s&%s", url, query)
 	}

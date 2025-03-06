@@ -9,17 +9,23 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const configFilename = "reddittui.toml"
+const (
+	configFilename    = "reddittui.toml"
+	defaultDomainName = "old.reddit.com"
+	defaultServerType = "old"
+)
 
 type Config struct {
 	Core   CoreConfig   `toml:"core"`
 	Filter FilterConfig `toml:"filter"`
+	Client ClientConfig `toml:"client"`
+	Server ServerConfig `toml:"server"`
 }
 
 type CoreConfig struct {
 	BypassCache   bool
 	LogLevel      string
-	ClientTimeout int
+	ClientTimeout int // Legacy
 }
 
 type FilterConfig struct {
@@ -27,12 +33,26 @@ type FilterConfig struct {
 	Subreddits []string
 }
 
+type ClientConfig struct {
+	TimeoutSeconds  int
+	CacheTtlSeconds int
+}
+
+type ServerConfig struct {
+	Domain string
+	Type   string
+}
+
 func NewConfig() Config {
 	return Config{
 		Core: CoreConfig{
 			BypassCache:   false,
-			LogLevel:      "Info",
+			LogLevel:      "Warn",
 			ClientTimeout: 10,
+		},
+		Server: ServerConfig{
+			Domain: defaultDomainName,
+			Type:   defaultServerType,
 		},
 	}
 }
@@ -86,7 +106,7 @@ func mergeConfig(left, right Config, meta toml.MetaData) Config {
 		left.Core.LogLevel = right.Core.LogLevel
 	}
 
-	if meta.IsDefined("core", "kclientTimeout") {
+	if meta.IsDefined("core", "clientTimeout") {
 		left.Core.ClientTimeout = right.Core.ClientTimeout
 	}
 
@@ -96,6 +116,22 @@ func mergeConfig(left, right Config, meta toml.MetaData) Config {
 
 	if meta.IsDefined("filter", "subreddits") {
 		left.Filter.Subreddits = right.Filter.Subreddits
+	}
+
+	if meta.IsDefined("client", "timeoutSeconds") {
+		left.Client.TimeoutSeconds = right.Client.TimeoutSeconds
+	}
+
+	if meta.IsDefined("client", "cacheTtlSeconds") {
+		left.Client.CacheTtlSeconds = right.Client.CacheTtlSeconds
+	}
+
+	if meta.IsDefined("server", "domain") {
+		left.Server.Domain = right.Server.Domain
+	}
+
+	if meta.IsDefined("server", "type") {
+		left.Server.Type = right.Server.Type
 	}
 
 	return left

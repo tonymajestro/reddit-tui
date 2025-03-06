@@ -1,11 +1,12 @@
-package client
+package posts
 
 import (
-	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"reddittui/client/cache"
 	"reddittui/client/common"
+	"reddittui/config"
 	"reddittui/model"
 	"reddittui/utils"
 	"strings"
@@ -14,45 +15,91 @@ import (
 	"golang.org/x/net/html"
 )
 
-var ErrParsingCacheHeaders = errors.New("could not parse cache-control header")
-
 type RedditPostsClient struct {
+	BaseUrl          string
+	CacheTtl         time.Duration
 	Client           *http.Client
 	Cache            cache.PostsCache
+	Parser           PostsParser
 	KeywordFilters   []string
 	SubredditFilters []string
 }
 
+func NewRedditPostsClient(
+	baseUrl string,
+	httpClient *http.Client,
+	postsCache cache.PostsCache,
+	configuration config.Config,
+) RedditPostsClient {
+	var parser PostsParser
+
+	switch strings.ToLower(configuration.Server.Type) {
+	case "old":
+		parser = OldRedditPostsParser{}
+	case "redlib":
+		parser = RedlibParser{baseUrl}
+	default:
+		panic("Unrecognized server type in configuration: " + configuration.Server.Type)
+	}
+
+	return RedditPostsClient{
+		BaseUrl:          baseUrl,
+		CacheTtl:         time.Duration(configuration.Client.CacheTtlSeconds) * time.Second,
+		Client:           httpClient,
+		Cache:            postsCache,
+		Parser:           parser,
+		KeywordFilters:   configuration.Filter.Keywords,
+		SubredditFilters: configuration.Filter.Subreddits,
+	}
+}
+
 func (r RedditPostsClient) GetHomePosts() (model.Posts, error) {
-	posts, err := r.tryGetCachedPosts(GetHomeUrl())
+	timer := utils.NewTimer("total time to retrieve home posts")
+	defer timer.StopAndLog()
+
+	posts, err := r.tryGetCachedPosts(r.BaseUrl)
 	posts.IsHome = true
+
 	return posts, err
 }
 
 func (r RedditPostsClient) GetSubredditPosts(subreddit string) (model.Posts, error) {
-	postsUrl := GetSubredditUrl(subreddit)
+	timer := utils.NewTimer("total time to retrieve subreddit posts")
+	defer timer.StopAndLog()
+
+	postsUrl := r.GetSubredditUrl(subreddit)
 	posts, err := r.tryGetCachedPosts(postsUrl)
 	posts.Subreddit = subreddit
 
 	return posts, err
 }
 
-// Try to get posts from cache. If they are not present, fetch them from reddit.com and
-// cache the results
+// Try to get posts from cache. If they are not present, fetch them and cache the results
 func (r RedditPostsClient) tryGetCachedPosts(postsUrl string) (posts model.Posts, err error) {
+	timer := utils.NewTimer("fetching posts from cache")
 	posts, err = r.Cache.Get(postsUrl)
 	if err == nil {
 		// return cached data
+		timer.StopAndLog()
 		return r.filterPosts(posts), nil
 	}
+	timer.StopAndLog()
 
+	timer = utils.NewTimer("getting posts from server")
 	posts, err = r.getPosts(postsUrl)
 	if err != nil {
+		timer.StopAndLog()
 		return posts, err
 	}
+	timer.StopAndLog()
 
+	timer = utils.NewTimer("filtering posts")
 	posts = r.filterPosts(posts)
+	timer.StopAndLog()
+
+	timer = utils.NewTimer("putting posts in cache")
 	r.Cache.Put(posts, postsUrl)
+	timer.StopAndLog()
 	return posts, nil
 }
 
@@ -62,9 +109,9 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 		return posts, err
 	}
 
-	req.Header.Add(userAgentKey, userAgentValue)
+	req.Header.Add(common.UserAgentHeaderKey, common.UserAgentHeaderValue)
 
-	timer := utils.NewTimer("fetching posts")
+	timer := utils.NewTimer("fetching posts from server")
 	res, err := r.Client.Do(req)
 	timer.StopAndLog("url", url)
 
@@ -77,11 +124,6 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 
 	defer res.Body.Close()
 
-	maxAge, err := getMaxAge(res)
-	if err != nil {
-		slog.Error("Error getting cache headers from response", "error", err.Error(), "url", url)
-	}
-
 	timer = utils.NewTimer("parsing posts html")
 	doc, err := html.Parse(res.Body)
 	timer.StopAndLog()
@@ -90,7 +132,7 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 	}
 
 	timer = utils.NewTimer("converting posts html")
-	posts = createPosts(HtmlNode{doc})
+	posts = r.Parser.ParsePosts(common.HtmlNode{Node: doc})
 	timer.StopAndLog()
 	if len(posts.Posts) == 0 {
 		// if there are no posts, assume 404.
@@ -99,7 +141,7 @@ func (r RedditPostsClient) getPosts(url string) (posts model.Posts, err error) {
 		return posts, common.ErrNotFound
 	}
 
-	posts.Expiry = time.Now().Add(maxAge)
+	posts.Expiry = time.Now().Add(r.CacheTtl)
 	return posts, nil
 }
 
@@ -130,55 +172,6 @@ outer:
 	return posts
 }
 
-func createPosts(root HtmlNode) model.Posts {
-	var (
-		posts       []model.Post
-		description string
-	)
-
-	for d := range root.FindDescendants("div", "thing") {
-		if d.ClassContains("promoted", "promotedlink") {
-			// Skip ads and promotional content
-			continue
-		}
-
-		post := createPost(d)
-		posts = append(posts, post)
-	}
-
-	for d := range root.FindDescendants("meta") {
-		if d.GetAttr("name") == "description" {
-			description = d.GetAttr("content")
-		}
-	}
-
-	return model.Posts{
-		Posts:       posts,
-		Description: description,
-	}
-}
-
-func createPost(n HtmlNode) model.Post {
-	var p model.Post
-	for c := range n.Descendants() {
-		cNode := HtmlNode{c}
-
-		if cNode.NodeEquals("a", "title") {
-			p.PostTitle = cNode.Text()
-			p.PostUrl = cNode.GetAttr("href")
-		} else if cNode.NodeEquals("a", "author") {
-			p.Author = cNode.Text()
-		} else if cNode.NodeEquals("a", "subreddit") {
-			p.Subreddit = cNode.Text()
-		} else if cNode.NodeEquals("time", "live-timestamp") {
-			p.FriendlyDate = cNode.Text()
-		} else if cNode.NodeEquals("a", "comments") {
-			p.CommentsUrl = cNode.GetAttr("href")
-			p.TotalComments = strings.Fields(cNode.Text())[0]
-		} else if cNode.NodeEquals("div", "likes") {
-			p.TotalLikes = cNode.Text()
-		}
-	}
-
-	return p
+func (r RedditPostsClient) GetSubredditUrl(subreddit string) string {
+	return fmt.Sprintf("%s/r/%s", r.BaseUrl, subreddit)
 }

@@ -8,11 +8,17 @@ const defaultConfiguration = `
 
 #[core]
 #bypassCache = false
-#logLevel = "Info"
-#clientTimeout = 10
+#logLevel = "Warn"
 
 #[filter]
 #keywords = ["drama"]
 #subreddits = ["news", "politics"]
 
+#[client]
+#timeoutSeconds = 10
+#cacheTtlSeconds = 3600
+
+#[server]
+#domain = "old.reddit.com"
+#type = "old"
 `

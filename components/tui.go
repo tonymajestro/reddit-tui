@@ -54,15 +54,15 @@ func NewRedditTui(configuration config.Config, subreddit, post string) RedditTui
 		commentsPage:  commentsPage,
 		modalManager:  modalManager,
 		initializing:  true,
-		initCmd:       getInitCmd(subreddit, post),
+		initCmd:       getInitCmd(redditClient.BaseUrl, subreddit, post),
 	}
 }
 
-func getInitCmd(subreddit, post string) tea.Cmd {
+func getInitCmd(baseUrl, subreddit, post string) tea.Cmd {
 	if len(subreddit) != 0 {
 		return messages.LoadSubreddit(subreddit)
 	} else if len(post) != 0 {
-		url := client.GetPostUrl(post)
+		url := client.GetPostUrl(baseUrl, post)
 		return messages.LoadComments(url)
 	} else {
 		return messages.LoadHome

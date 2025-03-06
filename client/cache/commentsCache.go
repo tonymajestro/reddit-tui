@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -18,11 +19,15 @@ type CommentsCache interface {
 }
 
 type FileCommentsCache struct {
+	BaseUrl      string
 	CacheBaseDir string
 }
 
-func NewFileCommentsCache(cacheDir string) FileCommentsCache {
-	return FileCommentsCache{CacheBaseDir: cacheDir}
+func NewFileCommentsCache(baseUrl, cacheDir string) FileCommentsCache {
+	return FileCommentsCache{
+		BaseUrl:      baseUrl,
+		CacheBaseDir: cacheDir,
+	}
 }
 
 // Get comments stored in cached file.
@@ -96,7 +101,8 @@ func (f FileCommentsCache) Put(comments model.Comments, filename string) error {
 }
 
 func (f FileCommentsCache) GetSubredditFromUrl(commentsUrl string) string {
-	part := "https://old.reddit.com/r/"
+	// part := "https://old.reddit.com/r/"
+	part := fmt.Sprintf("%s/r/", f.BaseUrl)
 	if !strings.Contains(commentsUrl, part) {
 		return ""
 	}

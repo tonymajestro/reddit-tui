@@ -43,7 +43,9 @@ func NewPostsPage(redditClient client.RedditClient, home bool) PostsPage {
 	items.AdditionalFullHelpKeys = postsKeys.FullHelp
 
 	header := NewPostsHeader()
-	header.SetContent(defaultHeaderTitle, defaultHeaderDescription)
+	if home {
+		header.SetContent(defaultHeaderTitle, defaultHeaderDescription)
+	}
 
 	containerStyle := styles.GlobalStyle
 

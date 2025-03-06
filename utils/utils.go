@@ -5,6 +5,10 @@ import (
 )
 
 func NormalizeSubreddit(subreddit string) string {
+	if subreddit == "reddit.com" {
+		return subreddit
+	}
+
 	if len(subreddit) >= 2 && subreddit[:2] == "r/" {
 		return subreddit
 	}

@@ -11,13 +11,21 @@ import (
 	"github.com/charmbracelet/x/exp/teatest"
 )
 
-const testTimeout = 20 * time.Second
+const (
+	testTimeout    = 20 * time.Second
+	testDomain     = "old.reddit.com"
+	testServerType = "old"
+)
 
 var testConf = config.Config{
 	Core: config.CoreConfig{
 		BypassCache:   false,
 		LogLevel:      "Warn",
 		ClientTimeout: int(testTimeout.Seconds()),
+	},
+	Server: config.ServerConfig{
+		Domain: testDomain,
+		Type:   testServerType,
 	},
 }
 

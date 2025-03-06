@@ -43,7 +43,6 @@ reddittui --post 1iyuce4
 - Navigation
   - **h, j, k, l:** vim movement
   - **left, right, up, down:** normal movement
-- Posts page
   - **s**: Switch subreddits
 - Comments page
   - **o**: Open post link in browser
@@ -53,20 +52,44 @@ reddittui --post 1iyuce4
   - **backspace**: Go back
   - **q, esc**: Exit reddittui
 
-## Configuration
-After running the reddittui binary, a configuration file will be created at **~/.config/reddittui/reddittui.toml**. Example configuration file:
+## Configuration files
+After running the reddittui binary, the following files will be initialized:
+- Configuration file:
+  - `~/.config/reddittui/reddittui.toml`
+- Log file:
+  - `~/.local/state/reddittui.log`
+- Cache
+  - `~/.cache/reddittui/
 
+Sample configuration:
 ```toml
 # Core configuration
 [core]
 bypassCache = false
-logLevel = "Debug"
-clientTimeout = 10
+logLevel = "Warn"
 
 # Filter out posts containing keywords or belonging to certain subreddits
 [filter]
 subreddits = ["news", "politics"]
 keywords = ["pizza", "pineapple"]
+
+# Configure client timeout and cache TTL. By default, subreddit posts and comments are cached for 1 hour.
+[client]
+timeoutSeconds = 10
+cacheTtlSeconds = 3600
+
+# Configure which reddit server to use. Default is old.reddit.com but redlib servers are also supported
+[server]
+domain = "old.reddit.com"
+type = "old"
+```
+
+Use the following configuration to use redlib backends instead of old.reddit.com:
+
+```toml
+[server]
+domain = "safereddit.com"
+type = "redlib"
 ```
 
 ## Acknowledgments

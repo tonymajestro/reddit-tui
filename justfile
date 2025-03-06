@@ -8,6 +8,8 @@ test:
 
 clean:
   rm -rf build/
+  rm -rf ~/.cache/reddittui/*
+  rm -rf ~/.local/state/reddittui/*
 
 build:
   @echo "Building reddittui..."
