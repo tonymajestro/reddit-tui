@@ -84,7 +84,8 @@ domain = "old.reddit.com"
 type = "old"
 ```
 
-Use the following configuration to use redlib backends instead of old.reddit.com:
+## Redlib
+For enhanced privacy, private [Redlib backends](https://github.com/redlib-org/redlib) are supported. A list of Redlib servers can be found [here](https://github.com/redlib-org/redlib-instances/blob/main/instances.json). Use the following configuration to use a Redlib server instead of old.reddit.com:
 
 ```toml
 [server]
