@@ -19,7 +19,7 @@ const (
 
 var testConf = config.Config{
 	Core: config.CoreConfig{
-		BypassCache:   false,
+		BypassCache:   true,
 		LogLevel:      "Warn",
 		ClientTimeout: int(testTimeout.Seconds()),
 	},
@@ -140,5 +140,5 @@ func WaitForWithInputs(t *testing.T, tm *teatest.TestModel, inputs string, messa
 		}
 
 		return true
-	}, teatest.WithCheckInterval(time.Millisecond*100), teatest.WithDuration(testTimeout))
+	}, teatest.WithCheckInterval(time.Millisecond*50), teatest.WithDuration(testTimeout))
 }
