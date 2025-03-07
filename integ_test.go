@@ -13,15 +13,17 @@ import (
 
 const (
 	testTimeout    = 20 * time.Second
-	testDomain     = "old.reddit.com"
-	testServerType = "old"
+	testDomain     = "safereddit.com"
+	testServerType = "redlib"
 )
 
 var testConf = config.Config{
 	Core: config.CoreConfig{
-		BypassCache:   true,
-		LogLevel:      "Warn",
-		ClientTimeout: int(testTimeout.Seconds()),
+		BypassCache: true,
+		LogLevel:    "Warn",
+	},
+	Client: config.ClientConfig{
+		TimeoutSeconds: int(testTimeout.Seconds()),
 	},
 	Server: config.ServerConfig{
 		Domain: testDomain,

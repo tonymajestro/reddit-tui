@@ -24,3 +24,6 @@ jobs:
 
       - name: Build reddituit
         run: just build
+
+      - name: Run tests
+        run: just test

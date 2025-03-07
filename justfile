@@ -34,7 +34,3 @@ uninstall: clean
   @echo "Cleaning reddittui..."
   sudo rm -f /usr/local/bin/reddittui
   @echo "Clean complete"
-
-setupIntegTests:
-  mkdir -p ~/.cache/reddittui
-  cp -r testData/* ~/.cache/reddittui
