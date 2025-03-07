@@ -59,7 +59,7 @@ After running the reddittui binary, the following files will be initialized:
 - Log file:
   - `~/.local/state/reddittui.log`
 - Cache
-  - `~/.cache/reddittui/
+  - `~/.cache/reddittui/`
 
 Sample configuration:
 ```toml
