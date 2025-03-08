@@ -1,2 +1,4 @@
 samples
 build/
+# Added by goreleaser init:
+dist/
