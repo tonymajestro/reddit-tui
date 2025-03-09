@@ -17,7 +17,14 @@ https://github.com/user-attachments/assets/40d61ef3-3a95-4a26-8c49-bec616f6ae1c
 - **POSIX Utilities:** The `install` command is used for installation, which is available on both Linux and macOS.
 
 ## Installation
-Clone the repository and run the install script: 
+### Binary releases
+
+You can download the official reddittui binaries from the releases page.
+
+- [https://github.com/tonymajestro/reddit-tui/releases](https://github.com/tonymajestro/reddit-tui/releases)
+
+### From source
+Clone the repository and run the install script. Must have git and go installed:
 
 ```bash
 git clone https://github.com/tonymajestro/reddit-tui.git reddittui
