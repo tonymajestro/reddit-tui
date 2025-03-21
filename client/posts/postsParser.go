@@ -30,15 +30,29 @@ func (p OldRedditPostsParser) ParsePosts(root common.HtmlNode) model.Posts {
 		posts = append(posts, post)
 	}
 
+	// Parse description
 	for d := range root.FindDescendants("meta") {
 		if d.GetAttr("name") == "description" {
 			description = d.GetAttr("content")
 		}
 	}
 
+	// Parse url for next page of posts
+	after := ""
+	for d := range root.FindDescendants("div", "nav-buttons") {
+		for a := range d.FindDescendants("a") {
+			if strings.Contains(a.Text(), "next") {
+				if parsed, err := url.Parse(a.GetAttr("href")); err == nil {
+					after = parsed.Query().Get("after")
+				}
+			}
+		}
+	}
+
 	modelPosts := model.Posts{
 		Posts:       posts,
 		Description: description,
+		After:       after,
 	}
 
 	return modelPosts

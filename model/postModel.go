@@ -23,6 +23,7 @@ type Posts struct {
 	Subreddit   string
 	IsHome      bool
 	Posts       []Post
+	After       string
 	Expiry      time.Time
 }
 

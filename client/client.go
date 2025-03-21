@@ -45,12 +45,12 @@ func NewRedditClient(configuration config.Config) RedditClient {
 	}
 }
 
-func (r RedditClient) GetHomePosts() (model.Posts, error) {
-	return r.postsClient.GetHomePosts()
+func (r RedditClient) GetHomePosts(after string) (model.Posts, error) {
+	return r.postsClient.GetHomePosts(after)
 }
 
-func (r RedditClient) GetSubredditPosts(subreddit string) (model.Posts, error) {
-	return r.postsClient.GetSubredditPosts(subreddit)
+func (r RedditClient) GetSubredditPosts(subreddit, after string) (model.Posts, error) {
+	return r.postsClient.GetSubredditPosts(subreddit, after)
 }
 
 func (r RedditClient) GetComments(url string) (model.Comments, error) {

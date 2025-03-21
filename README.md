@@ -44,6 +44,8 @@ reddittui --post 1iyuce4
   - **h, j, k, l:** vim movement
   - **left, right, up, down:** normal movement
   - **s**: Switch subreddits
+- Posts page
+  - **L**: Load more posts
 - Comments page
   - **o**: Open post link in browser
   - **c**: Collapse comments

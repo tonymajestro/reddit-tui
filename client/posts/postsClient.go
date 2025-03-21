@@ -53,21 +53,22 @@ func NewRedditPostsClient(
 	}
 }
 
-func (r RedditPostsClient) GetHomePosts() (model.Posts, error) {
+func (r RedditPostsClient) GetHomePosts(after string) (model.Posts, error) {
 	timer := utils.NewTimer("total time to retrieve home posts")
 	defer timer.StopAndLog()
 
-	posts, err := r.tryGetCachedPosts(r.BaseUrl)
+	postsUrl := r.BuildPostsUrl("", after)
+	posts, err := r.tryGetCachedPosts(postsUrl)
 	posts.IsHome = true
 
 	return posts, err
 }
 
-func (r RedditPostsClient) GetSubredditPosts(subreddit string) (model.Posts, error) {
+func (r RedditPostsClient) GetSubredditPosts(subreddit string, after string) (model.Posts, error) {
 	timer := utils.NewTimer("total time to retrieve subreddit posts")
 	defer timer.StopAndLog()
 
-	postsUrl := r.GetSubredditUrl(subreddit)
+	postsUrl := r.BuildPostsUrl(subreddit, after)
 	posts, err := r.tryGetCachedPosts(postsUrl)
 	posts.Subreddit = subreddit
 
@@ -172,6 +173,15 @@ outer:
 	return posts
 }
 
-func (r RedditPostsClient) GetSubredditUrl(subreddit string) string {
-	return fmt.Sprintf("%s/r/%s", r.BaseUrl, subreddit)
+func (r RedditPostsClient) BuildPostsUrl(subreddit, after string) string {
+	afterParam := ""
+	if len(after) > 0 {
+		afterParam = fmt.Sprintf("?after=%s", after)
+	}
+
+	if len(subreddit) > 0 {
+		return fmt.Sprintf("%s/r/%s%s", r.BaseUrl, subreddit, afterParam)
+	}
+
+	return fmt.Sprintf("%s%s", r.BaseUrl, afterParam)
 }

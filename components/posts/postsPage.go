@@ -23,7 +23,7 @@ const (
 
 type PostsPage struct {
 	Subreddit      string
-	posts          []model.Post
+	posts          model.Posts
 	redditClient   client.RedditClient
 	header         PostsHeader
 	list           list.Model
@@ -50,7 +50,6 @@ func NewPostsPage(redditClient client.RedditClient, home bool) PostsPage {
 	containerStyle := styles.GlobalStyle
 
 	return PostsPage{
-		posts:          []model.Post{},
 		list:           items,
 		redditClient:   redditClient,
 		header:         header,
@@ -91,10 +90,23 @@ func (p PostsPage) handleGlobalMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 			return p, p.loadSubreddit(subreddit)
 		}
 
+	case messages.LoadMorePostsMsg:
+		isHome := bool(msg)
+		if p.Home == isHome {
+			return p, p.loadMorePosts()
+		}
+
 	case messages.UpdatePostsMsg:
 		posts := model.Posts(msg)
 		if posts.IsHome == p.Home {
 			p.updatePosts(posts)
+			return p, messages.LoadingComplete
+		}
+
+	case messages.AddMorePostsMsg:
+		posts := model.Posts(msg)
+		if posts.IsHome == p.Home {
+			p.addPosts(posts)
 			return p, messages.LoadingComplete
 		}
 	}
@@ -108,7 +120,7 @@ func (p PostsPage) handleFocusedMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 		switch keypress := msg.String(); keypress {
 		case "enter", "right", "l":
 			loadCommentsCmd := func() tea.Msg {
-				post := p.posts[p.list.Index()]
+				post := p.posts.Posts[p.list.Index()]
 				return messages.LoadCommentsMsg(post.CommentsUrl)
 			}
 
@@ -118,6 +130,9 @@ func (p PostsPage) handleFocusedMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 			// Ignore q keystrokes to list.Modal. since it will default to sending a Quit message
 			// instead of showing the quit modal. Tui component will correctly handle quit mesages
 			return p, nil
+
+		case "L":
+			return p, messages.LoadMorePosts(p.Home)
 
 		case "H":
 			return p, messages.LoadHome
@@ -133,7 +148,7 @@ func (p PostsPage) handleFocusedMessages(msg tea.Msg) (PostsPage, tea.Cmd) {
 }
 
 func (p PostsPage) View() string {
-	if len(p.posts) == 0 {
+	if len(p.posts.Posts) == 0 {
 		return p.containerStyle.Render("")
 	}
 
@@ -171,7 +186,7 @@ func (p *PostsPage) resizeComponents() {
 
 func (p *PostsPage) loadHome() tea.Cmd {
 	return func() tea.Msg {
-		posts, err := p.redditClient.GetHomePosts()
+		posts, err := p.redditClient.GetHomePosts("")
 		if err != nil {
 			slog.Error(postsErrorText, "error", err)
 			return messages.ShowErrorModalMsg{ErrorMsg: postsErrorText}
@@ -181,9 +196,36 @@ func (p *PostsPage) loadHome() tea.Cmd {
 	}
 }
 
+func (p *PostsPage) loadMorePosts() tea.Cmd {
+	return func() tea.Msg {
+		var (
+			posts model.Posts
+			err   error
+		)
+
+		if len(p.posts.After) == 0 {
+			slog.Error(postsErrorText, "error", err)
+			return messages.ShowErrorModalMsg{ErrorMsg: postsErrorText}
+		}
+
+		if p.posts.IsHome {
+			posts, err = p.redditClient.GetHomePosts(p.posts.After)
+		} else {
+			posts, err = p.redditClient.GetSubredditPosts(p.Subreddit, p.posts.After)
+		}
+
+		if err != nil {
+			slog.Error(postsErrorText, "error", err)
+			return messages.ShowErrorModalMsg{ErrorMsg: postsErrorText}
+		}
+
+		return messages.AddMorePostsMsg(posts)
+	}
+}
+
 func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
 	return func() tea.Msg {
-		posts, err := p.redditClient.GetSubredditPosts(subreddit)
+		posts, err := p.redditClient.GetSubredditPosts(subreddit, "")
 		if err == common.ErrNotFound {
 			slog.Error(subredditNotFoundText, "error", err, "subreddit", subreddit)
 			return messages.ShowErrorModalMsg{ErrorMsg: fmt.Sprintf("%s: %s", subredditNotFoundText, subreddit)}
@@ -197,7 +239,7 @@ func (p PostsPage) loadSubreddit(subreddit string) tea.Cmd {
 }
 
 func (p *PostsPage) updatePosts(posts model.Posts) {
-	p.posts = posts.Posts
+	p.posts = posts
 
 	if posts.IsHome {
 		p.header.SetContent(defaultHeaderTitle, defaultHeaderDescription)
@@ -211,6 +253,33 @@ func (p *PostsPage) updatePosts(posts model.Posts) {
 	for _, p := range posts.Posts {
 		listItems = append(listItems, p)
 	}
+	p.list.SetItems(listItems)
+
+	// Need to set size again when content loads so padding and margins are correct
+	p.resizeComponents()
+}
+
+func (p *PostsPage) addPosts(posts model.Posts) {
+	uniqueTitles := make(map[string]bool)
+
+	p.posts.Posts = append(p.posts.Posts, posts.Posts...)
+	p.posts.After = posts.After
+
+	// Merge existing posts with new posts, avoiding duplicates
+	var listItems []list.Item
+	for _, p := range p.posts.Posts {
+		if _, ok := uniqueTitles[p.PostTitle]; !ok {
+			listItems = append(listItems, p)
+			uniqueTitles[p.PostTitle] = true
+		}
+	}
+	for _, p := range posts.Posts {
+		if _, ok := uniqueTitles[p.PostTitle]; !ok {
+			listItems = append(listItems, p)
+			uniqueTitles[p.PostTitle] = true
+		}
+	}
+
 	p.list.SetItems(listItems)
 
 	// Need to set size again when content loads so padding and margins are correct

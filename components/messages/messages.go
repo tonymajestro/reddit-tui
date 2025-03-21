@@ -16,9 +16,11 @@ type (
 	GoBackMsg          struct{}
 	LoadCommentsMsg    string
 	LoadHomeMsg        struct{}
+	LoadMorePostsMsg   bool
 	LoadSubredditMsg   string
 	UpdateCommentsMsg  model.Comments
 	UpdatePostsMsg     model.Posts
+	AddMorePostsMsg    model.Posts
 	LoadingCompleteMsg struct{}
 
 	OpenModalMsg        struct{}
@@ -40,6 +42,12 @@ func GoBack() tea.Msg {
 
 func LoadHome() tea.Msg {
 	return LoadHomeMsg{}
+}
+
+func LoadMorePosts(home bool) tea.Cmd {
+	return func() tea.Msg {
+		return LoadMorePostsMsg(home)
+	}
 }
 
 func LoadSubreddit(subreddit string) tea.Cmd {
