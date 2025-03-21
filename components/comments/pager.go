@@ -16,6 +16,7 @@ import (
 type CommentsViewport struct {
 	viewport      viewport.Model
 	postText      string
+	postUrl       string
 	comments      []model.Comment
 	keyMap        viewportKeyMap
 	help          help.Model
@@ -70,6 +71,7 @@ func (c *CommentsViewport) SetSize(w, h int) {
 
 func (c *CommentsViewport) SetContent(comments model.Comments) {
 	c.postText = comments.PostText
+	c.postUrl = comments.PostUrl
 	c.comments = comments.Comments
 
 	c.collapsed = false
@@ -91,6 +93,9 @@ func (c *CommentsViewport) GetViewportView() string {
 	if len(c.postText) > 0 {
 		content.WriteString(c.postText)
 		content.WriteString("\n")
+	} else {
+		content.WriteString(c.postUrl)
+		content.WriteString("\n\n")
 	}
 
 	for i := range len(c.comments) {
