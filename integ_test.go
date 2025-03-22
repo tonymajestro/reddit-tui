@@ -13,8 +13,8 @@ import (
 
 const (
 	testTimeout    = 20 * time.Second
-	testDomain     = "safereddit.com"
-	testServerType = "redlib"
+	testDomain     = "old.reddit.com"
+	testServerType = "old"
 )
 
 var testConf = config.Config{
