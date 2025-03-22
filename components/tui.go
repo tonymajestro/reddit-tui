@@ -62,7 +62,10 @@ func getInitCmd(baseUrl, subreddit, post string) tea.Cmd {
 	if len(subreddit) != 0 {
 		return messages.LoadSubreddit(subreddit)
 	} else if len(post) != 0 {
-		url := client.GetPostUrl(baseUrl, post)
+		url, err := client.GetPostUrl(baseUrl, post)
+		if err != nil {
+			panic(fmt.Sprintf("Could not load post %s: %v", post, err))
+		}
 		return messages.LoadComments(url)
 	} else {
 		return messages.LoadHome

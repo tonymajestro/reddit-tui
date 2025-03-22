@@ -17,24 +17,13 @@ const (
 	testServerType = "old"
 )
 
-var testConf = config.Config{
-	Core: config.CoreConfig{
-		BypassCache: true,
-		LogLevel:    "Warn",
-	},
-	Client: config.ClientConfig{
-		TimeoutSeconds: int(testTimeout.Seconds()),
-	},
-	Server: config.ServerConfig{
-		Domain: testDomain,
-		Type:   testServerType,
-	},
-}
-
 func TestStartup(t *testing.T) {
 	t.Logf("Testing startup...")
 
-	tui := components.NewRedditTui(testConf, "", "")
+	configuration := config.NewConfig()
+	configuration.Core.BypassCache = true
+
+	tui := components.NewRedditTui(configuration, "", "")
 	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
 
 	t.Logf("\tVerify the loading screen shows on startup...")
@@ -116,6 +105,34 @@ func TestShowComments(t *testing.T) {
 	})
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	WaitFor(t, tm, "r/dogs", "/r/dogs")
+
+	t.Logf("\tVerify comments header loads...")
+	time.Sleep(time.Second)
+	WaitForWithInputs(t, tm, "l", "submitted", "ago by", "point", "comment")
+}
+
+func TestLoadInitialPostFromId(t *testing.T) {
+	t.Logf("Testing loading initial post...")
+	configuration := config.NewConfig()
+	configuration.Core.BypassCache = true
+
+	postId := "1jgxswb"
+	tui := components.NewRedditTui(configuration, "", postId)
+	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
+
+	t.Logf("\tVerify comments header loads...")
+	time.Sleep(time.Second)
+	WaitForWithInputs(t, tm, "l", "submitted", "ago by", "point", "comment")
+}
+
+func TestLoadInitialPostFromUrl(t *testing.T) {
+	t.Logf("Testing loading initial post...")
+	configuration := config.NewConfig()
+	configuration.Core.BypassCache = true
+
+	postUrl := "https://old.reddit.com/r/dogs/comments/1jh0yne/dog_becoming_cuddlier_as_a_senior/"
+	tui := components.NewRedditTui(configuration, "", postUrl)
+	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
 
 	t.Logf("\tVerify comments header loads...")
 	time.Sleep(time.Second)

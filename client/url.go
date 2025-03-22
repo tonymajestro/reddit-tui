@@ -1,9 +1,7 @@
 package client
 
 import (
-	"fmt"
 	"net/url"
-	"strings"
 )
 
 func NormalizeBaseUrl(baseUrl string) (string, error) {
@@ -24,17 +22,13 @@ func NormalizeBaseUrl(baseUrl string) (string, error) {
 	return url, nil
 }
 
-func GetPostUrl(baseUrl, post string) string {
-	if strings.Contains(post, "http") || strings.Contains(post, baseUrl) {
-		index := strings.Index(post, baseUrl)
-		if index == -1 {
-			return post
-		}
-
-		rest := post[index+len(baseUrl):]
-		return baseUrl + rest
-	} else {
+func GetPostUrl(baseUrl, post string) (string, error) {
+	parsed, err := url.Parse(post)
+	if err != nil {
 		// User passed in post ID, build URL from ID
-		return fmt.Sprintf("%s/%s", baseUrl, post)
+		return url.JoinPath(baseUrl, post)
 	}
+
+	// User passed in url, use base URL instead of the one passed in
+	return url.JoinPath(baseUrl, parsed.Path)
 }
