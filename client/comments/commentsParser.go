@@ -115,6 +115,12 @@ func (p OldRedditCommentsParser) getPostContent(root common.HtmlNode) (content, 
 		// self post
 		if mdNode, ok := linkListingNode.FindDescendant("div", "md"); ok {
 			postText := renderHtmlNode(mdNode)
+
+			// skip alb.reddit.com urls
+			if strings.Contains(postText, "alb.reddit.com") {
+				return "", ""
+			}
+
 			content = postTextTrimRegex.ReplaceAllString(postText, "\n\n")
 			return content, ""
 		}
@@ -124,6 +130,12 @@ func (p OldRedditCommentsParser) getPostContent(root common.HtmlNode) (content, 
 		// link post
 		if linkNode, ok := entry.FindDescendant("a", "title"); ok {
 			url = linkNode.GetAttr("href")
+
+			// skip alb.reddit.com urls
+			if strings.Contains(url, "alb.reddit.com") {
+				return "", ""
+			}
+
 			content := fmt.Sprintf("%s\n\n", common.HyperLinkStyle.Render(url))
 			return content, url
 
