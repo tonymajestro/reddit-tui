@@ -66,6 +66,7 @@ func getInitCmd(baseUrl, subreddit, post string) tea.Cmd {
 		if err != nil {
 			panic(fmt.Sprintf("Could not load post %s: %v", post, err))
 		}
+
 		return messages.LoadComments(url)
 	} else {
 		return messages.LoadHome
@@ -73,7 +74,7 @@ func getInitCmd(baseUrl, subreddit, post string) tea.Cmd {
 }
 
 func (r RedditTui) Init() tea.Cmd {
-	return r.initCmd
+	return messages.LoadHome
 }
 
 func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -119,7 +120,6 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case messages.LoadHomeMsg:
-		slog.Debug("Loading home page")
 		if r.page == HomePage && !r.initializing {
 			return r, nil
 		}
@@ -217,6 +217,8 @@ func (r RedditTui) View() string {
 }
 
 func (r *RedditTui) goBack() {
+	slog.Debug("--- going back")
+	slog.Debug(fmt.Sprintf("=== prev: %d, curr: %d\n", r.prevPage, r.page))
 	switch r.page {
 	case CommentsPage:
 		if r.prevPage == HomePage {
@@ -227,6 +229,7 @@ func (r *RedditTui) goBack() {
 	default:
 		r.setPage(HomePage)
 	}
+	slog.Debug(fmt.Sprintf("=== prev: %d, curr: %d\n", r.prevPage, r.page))
 
 	r.focusActivePage()
 }
@@ -236,10 +239,18 @@ func (r *RedditTui) setPage(page pageType) {
 }
 
 func (r *RedditTui) completeLoading() tea.Cmd {
+	initializing := r.initializing
+
 	r.initializing = false
 	r.popup = false
 	r.setPage(r.loadingPage)
 	r.focusActivePage()
+
+	if initializing {
+		r.initializing = false
+		return r.initCmd
+	}
+
 	return r.modalManager.Blur()
 }
 

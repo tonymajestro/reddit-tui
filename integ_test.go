@@ -139,6 +139,23 @@ func TestLoadInitialPostFromUrl(t *testing.T) {
 	WaitForWithInputs(t, tm, "l", "submitted", "ago by", "point", "comment")
 }
 
+func TestLoadInitialSubredditAndCanGoBack(t *testing.T) {
+	t.Logf("Testing loading subreddit...")
+	configuration := config.NewConfig()
+	configuration.Core.BypassCache = true
+
+	tui := components.NewRedditTui(configuration, "dogs", "")
+	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
+
+	t.Logf("\tVerify dog subreddit loads...")
+	WaitFor(t, tm, "r/dogs", "/r/dogs")
+	time.Sleep(time.Second)
+
+	// Go back
+	t.Logf("\tVerify the home page loads...")
+	WaitForWithInputs(t, tm, "h", "The front page of the internet")
+}
+
 func WaitFor(t *testing.T, tm *teatest.TestModel, messages ...string) {
 	WaitForWithInputs(t, tm, "", messages...)
 }
