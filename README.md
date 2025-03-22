@@ -41,8 +41,10 @@ reddittui --post 1iyuce4
 
 ## Keybindings
 - Navigation
-  - **h, j, k, l:** vim movement
-  - **left, right, up, down:** normal movement
+  - **h, j, k, l:** Vim movement
+  - **left, right, up, down:** Normal movement
+  - **g**: Go to top of page
+  - **G**: Go to bottom of page
   - **s**: Switch subreddits
 - Posts page
   - **L**: Load more posts
