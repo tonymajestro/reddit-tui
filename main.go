@@ -12,9 +12,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+const version = "v0.3.1"
+
 type CliArgs struct {
-	subreddit string
-	postId    string
+	subreddit   string
+	postId      string
+	showVersion bool
 }
 
 func main() {
@@ -30,7 +33,13 @@ func main() {
 	var args CliArgs
 	flag.StringVar(&args.postId, "post", "", "Post id")
 	flag.StringVar(&args.subreddit, "subreddit", "", "Subreddit")
+	flag.BoolVar(&args.showVersion, "version", false, "Version")
 	flag.Parse()
+
+	if args.showVersion {
+		fmt.Printf("reddittui version %s\n", version)
+		os.Exit(0)
+	}
 
 	reddit := components.NewRedditTui(configuration, args.subreddit, args.postId)
 	p := tea.NewProgram(reddit, tea.WithAltScreen())
