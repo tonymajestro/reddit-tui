@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"reddittui/components"
 	"reddittui/config"
 	"testing"
@@ -19,9 +20,7 @@ const (
 
 func TestStartup(t *testing.T) {
 	t.Logf("Testing startup...")
-
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	tui := components.NewRedditTui(configuration, "", "")
 	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
@@ -35,8 +34,7 @@ func TestStartup(t *testing.T) {
 
 func TestSwitchSubreddit(t *testing.T) {
 	t.Logf("Testing switching subreddit...")
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	tui := components.NewRedditTui(configuration, "", "")
 	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
@@ -58,8 +56,7 @@ func TestSwitchSubreddit(t *testing.T) {
 
 func TestReturnToHomePage(t *testing.T) {
 	t.Logf("Testing returning to the home page after switching subreddits...")
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	tui := components.NewRedditTui(configuration, "", "")
 	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
@@ -86,8 +83,7 @@ func TestReturnToHomePage(t *testing.T) {
 
 func TestShowComments(t *testing.T) {
 	t.Logf("Testing show post comments...")
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	tui := components.NewRedditTui(configuration, "", "")
 	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
@@ -113,8 +109,7 @@ func TestShowComments(t *testing.T) {
 
 func TestLoadInitialPostFromId(t *testing.T) {
 	t.Logf("Testing loading initial post...")
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	postId := "1jgxswb"
 	tui := components.NewRedditTui(configuration, "", postId)
@@ -127,8 +122,7 @@ func TestLoadInitialPostFromId(t *testing.T) {
 
 func TestLoadInitialPostFromUrl(t *testing.T) {
 	t.Logf("Testing loading initial post...")
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	postUrl := "https://old.reddit.com/r/dogs/comments/1jh0yne/dog_becoming_cuddlier_as_a_senior/"
 	tui := components.NewRedditTui(configuration, "", postUrl)
@@ -141,8 +135,7 @@ func TestLoadInitialPostFromUrl(t *testing.T) {
 
 func TestLoadInitialSubredditAndCanGoBack(t *testing.T) {
 	t.Logf("Testing loading subreddit...")
-	configuration := config.NewConfig()
-	configuration.Core.BypassCache = true
+	configuration := getTestConfig()
 
 	tui := components.NewRedditTui(configuration, "dogs", "")
 	tm := teatest.NewTestModel(t, tui, teatest.WithInitialTermSize(300, 100))
@@ -177,4 +170,18 @@ func WaitForWithInputs(t *testing.T, tm *teatest.TestModel, inputs string, messa
 
 		return true
 	}, teatest.WithCheckInterval(time.Millisecond*50), teatest.WithDuration(testTimeout))
+}
+
+func getTestConfig() config.Config {
+	configuration := config.NewConfig()
+	configuration.Core.BypassCache = true
+
+	domain := os.Getenv("TEST_DOMAIN")
+	serverType := os.Getenv("TEST_SERVER_TYPE")
+	if len(domain) > 0 && len(serverType) > 0 {
+		configuration.Server.Domain = domain
+		configuration.Server.Type = serverType
+	}
+
+	return configuration
 }
