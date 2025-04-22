@@ -107,12 +107,13 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return r, nil
 
 	case messages.LoadingCompleteMsg:
-		return r, r.completeLoading()
+		cmd = r.completeLoading()
+		return r, cmd
 
 	case messages.ExitModalMsg:
 		r.popup = false
 		r.focusActivePage()
-		cmd := r.modalManager.Blur()
+		cmd = r.modalManager.Blur()
 		return r, cmd
 
 	case messages.GoBackMsg:
@@ -121,7 +122,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case messages.LoadHomeMsg:
 		if r.page == HomePage && !r.initializing {
-			return r, nil
+			return r, r.modalManager.Blur()
 		}
 
 		r.focusModal()
@@ -217,8 +218,6 @@ func (r RedditTui) View() string {
 }
 
 func (r *RedditTui) goBack() {
-	slog.Debug("--- going back")
-	slog.Debug(fmt.Sprintf("=== prev: %d, curr: %d\n", r.prevPage, r.page))
 	switch r.page {
 	case CommentsPage:
 		if r.prevPage == HomePage {
@@ -229,7 +228,6 @@ func (r *RedditTui) goBack() {
 	default:
 		r.setPage(HomePage)
 	}
-	slog.Debug(fmt.Sprintf("=== prev: %d, curr: %d\n", r.prevPage, r.page))
 
 	r.focusActivePage()
 }
