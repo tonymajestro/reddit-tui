@@ -245,6 +245,7 @@ func (p *PostsPage) updatePosts(posts model.Posts) {
 		p.header.SetContent(defaultHeaderTitle, defaultHeaderDescription)
 	} else {
 		p.header.SetContent(posts.Subreddit, posts.Description)
+		p.Subreddit = posts.Subreddit
 	}
 
 	p.list.ResetSelected()

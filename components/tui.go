@@ -133,10 +133,6 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case messages.LoadSubredditMsg:
 		subreddit := string(msg)
-		if r.page == SubredditPage && r.subredditPage.Subreddit == subreddit {
-			return r, nil
-		}
-
 		r.focusModal()
 		r.loadingPage = SubredditPage
 
