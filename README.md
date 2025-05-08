@@ -17,6 +17,8 @@ https://github.com/user-attachments/assets/40d61ef3-3a95-4a26-8c49-bec616f6ae1c
 - **POSIX Utilities:** The `install` command is used for installation, which is available on both Linux and macOS.
 
 ## Installation
+
+### Git
 Clone the repository and run the install script: 
 
 ```bash
@@ -24,6 +26,14 @@ git clone https://github.com/tonymajestro/reddit-tui.git reddittui
 cd reddittui
 ./install.sh
 ```
+
+### Arch
+Arch users can install reddittui from the [AUR](https://aur.archlinux.org/packages/reddit-tui) using yay or other AUR helpers:
+
+```bash
+yay reddit-tui
+```
+
 
 ## Usage
 Run the installed binary from your preferred terminal:
