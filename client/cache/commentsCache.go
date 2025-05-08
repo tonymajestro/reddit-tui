@@ -3,6 +3,7 @@ package cache
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/url"
 	"os"
@@ -16,6 +17,7 @@ import (
 type CommentsCache interface {
 	Get(path string) (model.Comments, error)
 	Put(comments model.Comments, path string) error
+	Clean()
 }
 
 type FileCommentsCache struct {
@@ -43,6 +45,7 @@ func (f FileCommentsCache) Get(filename string) (comments model.Comments, err er
 
 	cacheFile, err := os.Open(cacheFilePath)
 	if os.IsNotExist(err) {
+		slog.Info("not found: " + cacheFilePath)
 		return comments, common.ErrNotFound
 	} else if err != nil {
 		slog.Warn("Could not open cache file.", "error", err)
@@ -101,7 +104,6 @@ func (f FileCommentsCache) Put(comments model.Comments, filename string) error {
 }
 
 func (f FileCommentsCache) GetSubredditFromUrl(commentsUrl string) string {
-	// part := "https://old.reddit.com/r/"
 	part := fmt.Sprintf("%s/r/", f.BaseUrl)
 	if !strings.Contains(commentsUrl, part) {
 		return ""
@@ -113,6 +115,86 @@ func (f FileCommentsCache) GetSubredditFromUrl(commentsUrl string) string {
 	}
 
 	return subreddit
+}
+
+func (f FileCommentsCache) Clean() {
+	// First delete expired comments files in each subreddit directory
+	filepath.WalkDir(f.CacheBaseDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Ignore directories, only look at cache comment files
+		if d.IsDir() || filepath.Ext(path) != ".json" {
+			return nil
+		}
+
+		cacheFile, err := os.Open(path)
+		if err != nil {
+			slog.Debug("Could not open cache file.", "error", err)
+			return nil
+		}
+
+		defer cacheFile.Close()
+
+		var comments model.Comments
+		decoder := json.NewDecoder(cacheFile)
+		err = decoder.Decode(&comments)
+		if err != nil {
+			slog.Debug("Could not decode cached comments.", "error", err)
+			return nil
+		}
+
+		// Delete cached comments file if it is expired
+		if time.Now().After(comments.Expiry) {
+			err = os.Remove(path)
+			if err != nil {
+				slog.Warn("Could not delete expired cache file")
+				return nil
+			}
+		}
+
+		return nil
+	})
+
+	// Wait for OS to process deleted files
+	time.Sleep(500 * time.Millisecond)
+
+	// Delete subreddit directories that are empty
+	filepath.WalkDir(f.CacheBaseDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			slog.Error("cache error", "error", err)
+			return nil
+		}
+
+		if !d.IsDir() || path == f.CacheBaseDir {
+			return nil
+		}
+
+		dir, err := os.Open(path)
+		if err != nil {
+			slog.Warn("Could not open cache dir", "error", err)
+			return filepath.SkipDir
+		}
+
+		// Get list of filenames in subreddit directory
+		files, err := dir.Readdirnames(0)
+		if err != nil {
+			slog.Warn("Could not read contests of subreddit cache dir", "error", err)
+			return filepath.SkipDir
+		}
+
+		// Delete subreddit directory if it is empty
+		if len(files) == 0 {
+			err = os.Remove(path)
+			if err != nil {
+				slog.Warn("Could not delete empty cache dir")
+				return filepath.SkipDir
+			}
+		}
+
+		return nil
+	})
 }
 
 type NoOpCommentsCache struct{}
@@ -127,4 +209,7 @@ func (n NoOpCommentsCache) Get(cacheFilePath string) (comments model.Comments, e
 
 func (n NoOpCommentsCache) Put(comments model.Comments, cacheFilePath string) error {
 	return nil
+}
+
+func (n NoOpCommentsCache) Clean() {
 }

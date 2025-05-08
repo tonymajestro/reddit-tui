@@ -57,6 +57,11 @@ func (r RedditClient) GetComments(url string) (model.Comments, error) {
 	return r.commentsClient.GetComments(url)
 }
 
+func (r RedditClient) CleanCache() {
+	r.postsClient.Cache.Clean()
+	r.commentsClient.Cache.Clean()
+}
+
 func InitializeCaches(baseUrl string, bypassCache bool) (cache.PostsCache, cache.CommentsCache) {
 	if bypassCache {
 		return cache.NewNoOpPostsCache(), cache.NewNoOpCommentsCache()

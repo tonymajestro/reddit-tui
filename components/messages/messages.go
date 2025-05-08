@@ -12,7 +12,7 @@ type ErrorModalMsg struct {
 }
 
 type (
-	InitMsg            struct{}
+	CleanCacheMsg      struct{}
 	GoBackMsg          struct{}
 	LoadCommentsMsg    string
 	LoadHomeMsg        struct{}
@@ -32,8 +32,8 @@ type (
 	OpenUrlMsg string
 )
 
-func Init() tea.Msg {
-	return InitMsg{}
+func CleanCache() tea.Msg {
+	return CleanCacheMsg{}
 }
 
 func GoBack() tea.Msg {

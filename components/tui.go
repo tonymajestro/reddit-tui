@@ -27,6 +27,7 @@ const (
 )
 
 type RedditTui struct {
+	redditClient  client.RedditClient
 	homePage      posts.PostsPage
 	subredditPage posts.PostsPage
 	commentsPage  comments.CommentsPage
@@ -49,6 +50,7 @@ func NewRedditTui(configuration config.Config, subreddit, post string) RedditTui
 	modalManager := modal.NewModalManager()
 
 	return RedditTui{
+		redditClient:  redditClient,
 		homePage:      homePage,
 		subredditPage: subredditPage,
 		commentsPage:  commentsPage,
@@ -69,7 +71,7 @@ func getInitCmd(baseUrl, subreddit, post string) tea.Cmd {
 
 		return messages.LoadComments(url)
 	} else {
-		return messages.LoadHome
+		return tea.Batch(messages.CleanCache, messages.LoadHome)
 	}
 }
 
@@ -101,6 +103,10 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return r, messages.ShowErrorModalWithCallback(errorMsg, messages.LoadHome)
 		}
+
+	case messages.CleanCacheMsg:
+		r.redditClient.CleanCache()
+		return r, nil
 
 	case messages.OpenModalMsg:
 		r.focusModal()

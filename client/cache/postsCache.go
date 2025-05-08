@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"io/fs"
 	"log/slog"
 	"net/url"
 	"os"
@@ -14,6 +15,7 @@ import (
 type PostsCache interface {
 	Get(path string) (model.Posts, error)
 	Put(posts model.Posts, cacheFilePath string) error
+	Clean()
 }
 
 type FilePostsCache struct {
@@ -82,6 +84,54 @@ func (f FilePostsCache) Put(posts model.Posts, filename string) error {
 	return nil
 }
 
+func (f FilePostsCache) Clean() {
+	filepath.WalkDir(f.CacheBaseDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			slog.Error("cache error", "error", err)
+			return nil
+		}
+
+		// Only clean up posts which are stored in root cache directory, skip everything else.
+		if d.IsDir() {
+			if path == f.CacheBaseDir {
+				return nil
+			} else {
+				return filepath.SkipDir
+			}
+		} else if filepath.Ext(path) != ".json" {
+			return nil
+		}
+
+		cacheFile, err := os.Open(path)
+		if err != nil {
+			slog.Debug("Could not open cache file.", "error", err)
+			return nil
+		}
+
+		defer cacheFile.Close()
+
+		var posts model.Posts
+		decoder := json.NewDecoder(cacheFile)
+		err = decoder.Decode(&posts)
+		if err != nil {
+			slog.Debug("Could not decode cached posts.", "error", err)
+			return nil
+		}
+
+		// Delete cached posts file if it is expired
+		if time.Now().After(posts.Expiry) {
+			slog.Debug("Removing expired cache posts", "path", path)
+			err = os.Remove(path)
+			if err != nil {
+				slog.Debug("Could not delete expired cache file", "error", err)
+				return nil
+			}
+		}
+
+		return nil
+	})
+}
+
 type NoOpPostsCache struct{}
 
 func NewNoOpPostsCache() NoOpPostsCache {
@@ -94,4 +144,7 @@ func (n NoOpPostsCache) Get(cacheFilePath string) (posts model.Posts, err error)
 
 func (n NoOpPostsCache) Put(posts model.Posts, cacheFilePath string) error {
 	return nil
+}
+
+func (f NoOpPostsCache) Clean() {
 }
