@@ -10,15 +10,15 @@ A lightweight terminal application for browsing Reddit from your command line. P
 ## Demo
 https://github.com/user-attachments/assets/40d61ef3-3a95-4a26-8c49-bec616f6ae1c
 
-## Prerequisites
+## Installation
 
+### Git
+#### Prerequisites
+- **Git**
 - **Go:** Version 1.16 or newer
 - **Terminal:** A Unix-like terminal (Linux, macOS, or similar).
 - **POSIX Utilities:** The `install` command is used for installation, which is available on both Linux and macOS.
 
-## Installation
-
-### Git
 Clone the repository and run the install script: 
 
 ```bash
