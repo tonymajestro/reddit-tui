@@ -199,12 +199,8 @@ func (c *CommentsViewport) toggleCollapseComments() {
 // Find comment closest to the center of the screen to act as an anchor when toggling
 // child comments.
 func (c *CommentsViewport) findAnchorComment() (pos int, title string, text string) {
-	// Don't use actual center of viewport since the header takes up some amount of space and
-	// users probably look closer to the top of the screen rather than the bottom
-	midPoint := c.viewport.YOffset + int(float64(c.viewport.Height)*0.4)
-
-	findAnchorHelper := func(offset int) int {
-		for i := midPoint; i >= 0 && i < len(c.viewportLines); i += offset {
+	findAnchorHelper := func(start, offset int) int {
+		for i := start; i >= 0 && i < len(c.viewportLines); i += offset {
 			line := c.viewportLines[i]
 			if len(line) > 0 && line[0] == ' ' {
 				continue
@@ -219,10 +215,18 @@ func (c *CommentsViewport) findAnchorComment() (pos int, title string, text stri
 		return -1
 	}
 
+	// Don't use actual center of viewport since the header takes up some amount of space and
+	// users probably look closer to the top of the screen rather than the bottom
+	searchStart := c.viewport.YOffset + int(float64(c.viewport.Height)*0.4)
+
+	if searchStart >= len(c.viewportLines) {
+		searchStart = 0
+	}
+
 	// Look for the comment above and below the center of the screen. Calculate which comment is closer to
 	// the center of the screen
-	upPos := findAnchorHelper(-1)
-	downPos := findAnchorHelper(1)
+	upPos := findAnchorHelper(searchStart, -1)
+	downPos := findAnchorHelper(searchStart, 1)
 
 	if upPos < 0 && downPos < 0 {
 		return -1, "", ""
@@ -232,7 +236,7 @@ func (c *CommentsViewport) findAnchorComment() (pos int, title string, text stri
 		return downPos, c.viewportLines[downPos], c.viewportLines[downPos+1]
 	}
 
-	upDiff, downDiff := midPoint-upPos, downPos-midPoint
+	upDiff, downDiff := searchStart-upPos, downPos-searchStart
 	if upDiff < downDiff {
 		return upPos, c.viewportLines[upPos], c.viewportLines[upPos+1]
 	}
