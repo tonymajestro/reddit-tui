@@ -34,6 +34,16 @@ Arch users can install reddittui from the [AUR](https://aur.archlinux.org/packag
 yay reddit-tui
 ```
 
+### Nix
+Nix users can try it in a shell or add it to their system config like this.
+```bash
+nix-shell -p reddit-tui
+```
+```nix
+  environment.systemPackages = [
+      pkgs.reddit-tui
+    ];
+```
 
 ## Usage
 Run the installed binary from your preferred terminal:
