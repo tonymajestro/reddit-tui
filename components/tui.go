@@ -148,6 +148,7 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case messages.LoadMorePostsMsg:
 		r.focusModal()
+		r.loadingPage = r.page
 
 		cmd = r.modalManager.SetLoading("loading posts...")
 		cmds = append(cmds, cmd)
