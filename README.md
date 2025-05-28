@@ -27,6 +27,12 @@ cd reddittui
 ./install.sh
 ```
 
+To remove reddittui run the uninstall script:
+
+```bash
+./uninstall.sh
+```
+
 ### Arch
 Arch users can install reddittui from the [AUR](https://aur.archlinux.org/packages/reddit-tui) using yay or other AUR helpers:
 
