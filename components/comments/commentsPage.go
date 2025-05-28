@@ -73,7 +73,7 @@ func (c CommentsPage) handleFocusedMessages(msg tea.Msg) (CommentsPage, tea.Cmd)
 		case "H":
 			return c, messages.LoadHome
 
-		case "B", "escape", "backspace", "left", "h":
+		case "escape", "backspace", "left", "h":
 			return c, messages.GoBack
 
 		case "o", "O":
