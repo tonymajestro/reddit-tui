@@ -12,7 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const version = "v0.3.8"
+const version = "v0.3.9"
 
 type CliArgs struct {
 	subreddit   string
