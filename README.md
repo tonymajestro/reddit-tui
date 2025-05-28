@@ -34,10 +34,16 @@ To remove reddittui run the uninstall script:
 ```
 
 ### Arch
-Arch users can install reddittui from the [AUR](https://aur.archlinux.org/packages/reddit-tui) using yay or other AUR helpers:
+Arch users can install reddittui from the AUR using yay or other AUR helpers.
+
+[Pre-compiled](https://aur.archlinux.org/packages/reddit-tui-bin) and [source packages](https://aur.archlinux.org/packages/reddit-tui) are available.
 
 ```bash
-yay reddit-tui
+yay -S reddit-tui-bin
+```
+
+```bash
+yay -S reddit-tui
 ```
 
 ### Nix
