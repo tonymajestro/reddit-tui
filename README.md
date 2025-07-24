@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=tonymajestro&project=reddit-tui&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 # Reddittui
 A lightweight terminal application for browsing Reddit from your command line. Powered by [bubbletea](https://github.com/charmbracelet/bubbletea)
 
