@@ -8,6 +8,7 @@ type viewportKeyMap struct {
 	GoToStart        key.Binding
 	GoToEnd          key.Binding
 	OpenPost         key.Binding
+	PreviewImage     key.Binding
 	GoHome           key.Binding
 	CollapseComments key.Binding
 	ShowFullHelp     key.Binding
@@ -37,6 +38,10 @@ var commentsKeys = viewportKeyMap{
 		key.WithKeys("o", "O"),
 		key.WithHelp("o", "open post"),
 	),
+	PreviewImage: key.NewBinding(
+		key.WithKeys("i", "I"),
+		key.WithHelp("i", "preview image"),
+	),
 	GoHome: key.NewBinding(
 		key.WithKeys("H"),
 		key.WithHelp("H", "go home"),
@@ -61,12 +66,12 @@ var commentsKeys = viewportKeyMap{
 }
 
 func (k viewportKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.CursorUp, k.CursorDown, k.OpenPost, k.GoHome, k.ShowFullHelp}
+	return []key.Binding{k.CursorUp, k.CursorDown, k.OpenPost, k.PreviewImage, k.ShowFullHelp}
 }
 
 func (k viewportKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.CursorUp, k.CursorDown, k.GoToStart, k.GoToEnd, k.OpenPost},
-		{k.GoHome, k.CollapseComments, k.Quit, k.CloseFullHelp},
+		{k.PreviewImage, k.GoHome, k.CollapseComments, k.Quit, k.CloseFullHelp},
 	}
 }

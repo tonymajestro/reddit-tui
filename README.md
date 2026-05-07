@@ -15,7 +15,7 @@ https://github.com/user-attachments/assets/40d61ef3-3a95-4a26-8c49-bec616f6ae1c
 ### Git
 #### Prerequisites
 - **Git**
-- **Go:** Version 1.16 or newer
+- **Go:** Version 1.26 or newer
 - **Terminal:** A Unix-like terminal (Linux, macOS, or similar).
 - **POSIX Utilities:** The `install` command is used for installation, which is available on both Linux and macOS.
 
@@ -82,6 +82,7 @@ reddittui --post 1iyuce4
   - **L**: Load more posts
 - Comments page
   - **o**: Open post link in browser
+  - **i**: Preview post image in terminal
   - **c**: Collapse comments
 - Misc
   - **H:** Go to home page
@@ -118,6 +119,13 @@ cacheTtlSeconds = 3600
 [server]
 domain = "old.reddit.com"
 type = "old"
+
+# Inline image preview in supported terminals
+[imagePreview]
+enabled = true
+maxWidthCells = 160
+maxHeightCells = 70
+preferredProtocol = "auto"
 ```
 
 ## Redlib

@@ -21,4 +21,10 @@ const defaultConfiguration = `
 #[server]
 #domain = "old.reddit.com"
 #type = "old"
+
+#[imagePreview]
+#enabled = true
+#maxWidthCells = 160
+#maxHeightCells = 70
+#preferredProtocol = "auto"
 `

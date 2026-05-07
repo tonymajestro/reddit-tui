@@ -22,7 +22,11 @@ type Viewer interface {
 }
 
 // func Place(fg, bg string, xPos, yPos lipgloss.Position) string {
-func PlaceModal(foreground, background Viewer, xPos, yPos lipgloss.Position, modalStyle lipgloss.Style) string {
+func PlaceModal(
+	foreground, background Viewer,
+	xPos, yPos lipgloss.Position,
+	modalStyle lipgloss.Style,
+) string {
 	var (
 		x int
 		y int
@@ -55,7 +59,7 @@ func PlaceModal(foreground, background Viewer, xPos, yPos lipgloss.Position, mod
 		// 45% looks more pleasing than 50% for center aligned modals
 		y = int((float64(bgHeight) * 0.45)) - (fgHeight / 2) - 1
 	case lipgloss.Bottom:
-		x = bgHeight - fgHeight
+		y = bgHeight - fgHeight
 	}
 
 	return Place(x, y, fg, bg, false)
@@ -116,7 +120,7 @@ func Place(
 		pos := 0
 		if x > 0 {
 			left := truncate.String(bgLine, uint(x))
-			pos = ansi.PrintableRuneWidth(left)
+			pos = lipgloss.Width(left)
 			b.WriteString(left)
 			if pos < x {
 				b.WriteString(ws.render(x - pos))
@@ -126,11 +130,11 @@ func Place(
 
 		fgLine := fgLines[i-y]
 		b.WriteString(fgLine)
-		pos += ansi.PrintableRuneWidth(fgLine)
+		pos += lipgloss.Width(fgLine)
 
 		right := cutLeft(bgLine, pos)
-		bgWidth := ansi.PrintableRuneWidth(bgLine)
-		rightWidth := ansi.PrintableRuneWidth(right)
+		bgWidth := lipgloss.Width(bgLine)
+		rightWidth := lipgloss.Width(right)
 		if rightWidth <= bgWidth-pos {
 			b.WriteString(ws.render(bgWidth - rightWidth - pos))
 		}
@@ -147,7 +151,7 @@ func getLines(s string) (lines []string, widest int) {
 	lines = strings.Split(s, "\n")
 
 	for _, l := range lines {
-		w := ansi.PrintableRuneWidth(l)
+		w := lipgloss.Width(l)
 		if widest < w {
 			widest = w
 		}

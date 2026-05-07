@@ -4,17 +4,23 @@ import (
 	"fmt"
 	"log/slog"
 	"reddittui/client"
+	"reddittui/client/images"
 	"reddittui/components/comments"
 	"reddittui/components/messages"
 	"reddittui/components/modal"
 	"reddittui/components/posts"
 	"reddittui/config"
 	"reddittui/utils"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 const defaultLoadingMessage = "loading reddit.com..."
+
+type imageResizeTickMsg struct {
+	gen int
+}
 
 type (
 	pageType int
@@ -38,6 +44,7 @@ type RedditTui struct {
 	prevPage      pageType
 	loadingPage   pageType
 	initCmd       tea.Cmd
+	imageResizeGen int
 }
 
 func NewRedditTui(configuration config.Config, subreddit, post string) RedditTui {
@@ -45,7 +52,7 @@ func NewRedditTui(configuration config.Config, subreddit, post string) RedditTui
 
 	homePage := posts.NewPostsPage(redditClient, true)
 	subredditPage := posts.NewPostsPage(redditClient, false)
-	commentsPage := comments.NewCommentsPage(redditClient)
+	commentsPage := comments.NewCommentsPage(redditClient, configuration)
 
 	modalManager := modal.NewModalManager()
 
@@ -116,10 +123,34 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = r.completeLoading()
 		return r, cmd
 
+	case tea.BlurMsg:
+		// Clear terminal images when losing focus (e.g., tmux window switch)
+		if r.modalManager.IsImagePreviewOpen() {
+			if err := images.ClearTerminalImages(); err != nil {
+				slog.Warn("Could not clear terminal image preview on blur", "error", err)
+			}
+		}
+		return r, nil
+
+	case tea.FocusMsg:
+		return r, nil
+
 	case messages.ExitModalMsg:
+		wasImagePreview := r.modalManager.IsImagePreviewOpen()
+		if wasImagePreview {
+			r.commentsPage.ClearImageCache()
+		}
 		r.popup = false
 		r.focusActivePage()
 		cmd = r.modalManager.Blur()
+		if wasImagePreview {
+			return r, tea.Batch(cmd, tea.ClearScreen, func() tea.Msg {
+				if err := images.ClearTerminalImages(); err != nil {
+					slog.Warn("Could not clear terminal image preview", "error", err)
+				}
+				return nil
+			})
+		}
 		return r, cmd
 
 	case messages.GoBackMsg:
@@ -160,6 +191,14 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = r.modalManager.SetLoading("loading comments...")
 		cmds = append(cmds, cmd)
 
+	case messages.LoadImagePreviewMsg:
+		if err := images.ClearTerminalImages(); err != nil {
+			slog.Warn("Could not clear previous image preview", "error", err)
+		}
+		r.focusModal()
+		cmd = r.modalManager.SetLoading("loading image preview...")
+		cmds = append(cmds, cmd)
+
 	case messages.OpenUrlMsg:
 		url := string(msg)
 		if err := utils.OpenUrl(url); err != nil {
@@ -168,11 +207,24 @@ func (r RedditTui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 
+	case imageResizeTickMsg:
+		if msg.gen == r.imageResizeGen && r.modalManager.IsImagePreviewOpen() {
+			cmds = append(cmds, r.commentsPage.ReRenderImagePreview())
+		}
+
 	case tea.WindowSizeMsg:
 		r.homePage.SetSize(msg.Width, msg.Height)
 		r.subredditPage.SetSize(msg.Width, msg.Height)
 		r.commentsPage.SetSize(msg.Width, msg.Height)
 		r.modalManager.SetSize(msg.Width, msg.Height)
+
+		if r.modalManager.IsImagePreviewOpen() {
+			r.imageResizeGen++
+			gen := r.imageResizeGen
+			cmds = append(cmds, tea.Tick(150*time.Millisecond, func(t time.Time) tea.Msg {
+				return imageResizeTickMsg{gen: gen}
+			}))
+		}
 
 	case tea.KeyMsg:
 		switch msg.String() {

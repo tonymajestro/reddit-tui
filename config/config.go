@@ -16,10 +16,11 @@ const (
 )
 
 type Config struct {
-	Core   CoreConfig   `toml:"core"`
-	Filter FilterConfig `toml:"filter"`
-	Client ClientConfig `toml:"client"`
-	Server ServerConfig `toml:"server"`
+	Core         CoreConfig         `toml:"core"`
+	Filter       FilterConfig       `toml:"filter"`
+	Client       ClientConfig       `toml:"client"`
+	Server       ServerConfig       `toml:"server"`
+	ImagePreview ImagePreviewConfig `toml:"imagePreview"`
 }
 
 type CoreConfig struct {
@@ -43,6 +44,13 @@ type ServerConfig struct {
 	Type   string
 }
 
+type ImagePreviewConfig struct {
+	Enabled           bool
+	MaxWidthCells     int
+	MaxHeightCells    int
+	PreferredProtocol string
+}
+
 func NewConfig() Config {
 	return Config{
 		Core: CoreConfig{
@@ -53,6 +61,12 @@ func NewConfig() Config {
 		Server: ServerConfig{
 			Domain: defaultDomainName,
 			Type:   defaultServerType,
+		},
+		ImagePreview: ImagePreviewConfig{
+			Enabled:           true,
+			MaxWidthCells:     160,
+			MaxHeightCells:    70,
+			PreferredProtocol: "auto",
 		},
 	}
 }
@@ -132,6 +146,22 @@ func mergeConfig(left, right Config, meta toml.MetaData) Config {
 
 	if meta.IsDefined("server", "type") {
 		left.Server.Type = right.Server.Type
+	}
+
+	if meta.IsDefined("imagePreview", "enabled") {
+		left.ImagePreview.Enabled = right.ImagePreview.Enabled
+	}
+
+	if meta.IsDefined("imagePreview", "maxWidthCells") {
+		left.ImagePreview.MaxWidthCells = right.ImagePreview.MaxWidthCells
+	}
+
+	if meta.IsDefined("imagePreview", "maxHeightCells") {
+		left.ImagePreview.MaxHeightCells = right.ImagePreview.MaxHeightCells
+	}
+
+	if meta.IsDefined("imagePreview", "preferredProtocol") {
+		left.ImagePreview.PreferredProtocol = right.ImagePreview.PreferredProtocol
 	}
 
 	return left

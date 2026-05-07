@@ -1,10 +1,15 @@
 package comments
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"reddittui/client"
+	"reddittui/client/images"
 	"reddittui/components/messages"
+	"reddittui/components/modal"
 	"reddittui/components/styles"
+	"reddittui/config"
 	"reddittui/model"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,23 +19,35 @@ import (
 var commentsErrorText = "Could not load comments. Please try again in a few moments."
 
 type CommentsPage struct {
-	redditClient   client.RedditClient
-	header         CommentsHeader
-	pager          CommentsViewport
-	containerStyle lipgloss.Style
-	postUrl        string
-	focus          bool
+	redditClient        client.RedditClient
+	imagePreviewClient  *images.PreviewClient
+	imagePreviewOptions config.ImagePreviewConfig
+	header              CommentsHeader
+	pager               CommentsViewport
+	containerStyle      lipgloss.Style
+	postUrl             string
+	w                   int
+	h                   int
+	focus               bool
 }
 
-func NewCommentsPage(redditClient client.RedditClient) CommentsPage {
+func NewCommentsPage(redditClient client.RedditClient, configuration config.Config) CommentsPage {
 	header := NewCommentsHeader()
 	vp := NewCommentsViewport()
 
+	timeoutSeconds := max(configuration.Core.ClientTimeout, configuration.Client.TimeoutSeconds)
+	imagePreviewClient := images.NewPreviewClient(
+		timeoutSeconds,
+		configuration.ImagePreview.PreferredProtocol,
+	)
+
 	return CommentsPage{
-		redditClient:   redditClient,
-		header:         header,
-		pager:          vp,
-		containerStyle: styles.GlobalStyle,
+		redditClient:        redditClient,
+		imagePreviewClient:  &imagePreviewClient,
+		imagePreviewOptions: configuration.ImagePreview,
+		header:              header,
+		pager:               vp,
+		containerStyle:      styles.GlobalStyle,
 	}
 }
 
@@ -58,6 +75,8 @@ func (c CommentsPage) handleGlobalMessages(msg tea.Msg) (CommentsPage, tea.Cmd) 
 	case messages.LoadCommentsMsg:
 		url := string(msg)
 		return c, c.loadComments(url)
+	case messages.LoadImagePreviewMsg:
+		return c, c.loadImagePreview(string(msg))
 	case messages.UpdateCommentsMsg:
 		c.updateComments(model.Comments(msg))
 		return c, messages.LoadingComplete
@@ -73,11 +92,19 @@ func (c CommentsPage) handleFocusedMessages(msg tea.Msg) (CommentsPage, tea.Cmd)
 		case "H":
 			return c, messages.LoadHome
 
-		case "escape", "backspace", "left", "h":
+		case "esc", "backspace", "left", "h":
 			return c, messages.GoBack
 
 		case "o", "O":
 			return c, messages.OpenUrl(c.postUrl)
+		case "i", "I":
+			if !c.imagePreviewOptions.Enabled {
+				return c, messages.ShowErrorModal("Image preview is disabled in configuration.")
+			}
+			if c.postUrl == "" {
+				return c, messages.ShowErrorModal("This post does not have a previewable URL.")
+			}
+			return c, messages.LoadImagePreview(c.postUrl)
 		}
 	}
 
@@ -94,6 +121,8 @@ func (c CommentsPage) View() string {
 }
 
 func (c *CommentsPage) SetSize(w, h int) {
+	c.w = w
+	c.h = h
 	c.containerStyle = c.containerStyle.Width(w).Height(h)
 	c.resizeComponents()
 }
@@ -104,6 +133,30 @@ func (c *CommentsPage) Focus() {
 
 func (c *CommentsPage) Blur() {
 	c.focus = false
+}
+
+func (c *CommentsPage) ReRenderImagePreview() tea.Cmd {
+	return func() tea.Msg {
+		maxWidth, maxHeight := modal.ImagePreviewContentSize(c.w, c.h)
+		if c.imagePreviewOptions.MaxWidthCells > 0 {
+			maxWidth = min(c.imagePreviewOptions.MaxWidthCells, maxWidth)
+		}
+		if c.imagePreviewOptions.MaxHeightCells > 0 {
+			maxHeight = min(c.imagePreviewOptions.MaxHeightCells, maxHeight)
+		}
+
+		imagePreview, err := c.imagePreviewClient.ReRender(maxWidth, maxHeight)
+		if err != nil {
+			slog.Error("Could not re-render image preview", "error", err)
+			return nil
+		}
+
+		return messages.UpdateImagePreviewMsg(imagePreview)
+	}
+}
+
+func (c *CommentsPage) ClearImageCache() {
+	c.imagePreviewClient.ClearCache()
 }
 
 func (c *CommentsPage) resizeComponents() {
@@ -137,4 +190,45 @@ func (c *CommentsPage) updateComments(comments model.Comments) {
 
 	// Need to resize components when content loads so padding and margins are correct
 	c.resizeComponents()
+}
+
+func (c *CommentsPage) loadImagePreview(url string) tea.Cmd {
+	return func() tea.Msg {
+		maxWidth, maxHeight := modal.ImagePreviewContentSize(c.w, c.h)
+		if c.imagePreviewOptions.MaxWidthCells > 0 {
+			maxWidth = min(c.imagePreviewOptions.MaxWidthCells, maxWidth)
+		}
+		if c.imagePreviewOptions.MaxHeightCells > 0 {
+			maxHeight = min(c.imagePreviewOptions.MaxHeightCells, maxHeight)
+		}
+		if maxWidth <= 0 {
+			maxWidth = c.imagePreviewOptions.MaxWidthCells
+		}
+		if maxHeight <= 0 {
+			maxHeight = c.imagePreviewOptions.MaxHeightCells
+		}
+
+		imagePreview, err := c.imagePreviewClient.RenderFromURL(url, maxWidth, maxHeight)
+		if err != nil {
+			slog.Error("Could not load image preview", "url", url, "error", err)
+			return messages.ShowErrorModalMsg{ErrorMsg: imagePreviewErrorMessage(err)}
+		}
+
+		return messages.UpdateImagePreviewMsg(imagePreview)
+	}
+}
+
+func imagePreviewErrorMessage(err error) string {
+	switch {
+	case errors.Is(err, images.ErrUnsupportedImageURL):
+		return "The current post URL does not point to a previewable image."
+	case errors.Is(err, images.ErrImageTooLarge):
+		return "The image is too large to preview in the terminal."
+	case errors.Is(err, images.ErrCannotDecodeImage):
+		return "Could not decode image content from this URL."
+	case errors.Is(err, images.ErrCannotFetchImage):
+		return "Could not download image for preview."
+	default:
+		return fmt.Sprintf("Could not render image preview: %v", err)
+	}
 }

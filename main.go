@@ -42,7 +42,7 @@ func main() {
 	}
 
 	reddit := components.NewRedditTui(configuration, args.subreddit, args.postId)
-	p := tea.NewProgram(reddit, tea.WithAltScreen())
+	p := tea.NewProgram(reddit, tea.WithAltScreen(), tea.WithReportFocus())
 
 	if _, err := p.Run(); err != nil {
 		slog.Error("Error running reddittui, see logfile for details", "error", err)

@@ -12,16 +12,18 @@ type ErrorModalMsg struct {
 }
 
 type (
-	CleanCacheMsg      struct{}
-	GoBackMsg          struct{}
-	LoadCommentsMsg    string
-	LoadHomeMsg        struct{}
-	LoadMorePostsMsg   bool
-	LoadSubredditMsg   string
-	UpdateCommentsMsg  model.Comments
-	UpdatePostsMsg     model.Posts
-	AddMorePostsMsg    model.Posts
-	LoadingCompleteMsg struct{}
+	CleanCacheMsg         struct{}
+	GoBackMsg             struct{}
+	LoadCommentsMsg       string
+	LoadImagePreviewMsg   string
+	LoadHomeMsg           struct{}
+	LoadMorePostsMsg      bool
+	LoadSubredditMsg      string
+	UpdateImagePreviewMsg string
+	UpdateCommentsMsg     model.Comments
+	UpdatePostsMsg        model.Posts
+	AddMorePostsMsg       model.Posts
+	LoadingCompleteMsg    struct{}
 
 	OpenModalMsg        struct{}
 	ExitModalMsg        struct{}
@@ -59,6 +61,12 @@ func LoadSubreddit(subreddit string) tea.Cmd {
 func LoadComments(url string) tea.Cmd {
 	return func() tea.Msg {
 		return LoadCommentsMsg(url)
+	}
+}
+
+func LoadImagePreview(url string) tea.Cmd {
+	return func() tea.Msg {
+		return LoadImagePreviewMsg(url)
 	}
 }
 

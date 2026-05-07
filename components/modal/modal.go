@@ -17,6 +17,7 @@ const (
 	searching
 	quitting
 	showingError
+	showingImagePreview
 )
 
 var modalStyle = lipgloss.NewStyle().
@@ -25,23 +26,33 @@ var modalStyle = lipgloss.NewStyle().
 	Padding(1, 2).
 	Margin(1, 1)
 
+var imagePreviewModalStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder(), true).
+	BorderForeground(colors.AdaptiveColor(colors.Blue)).
+	Padding(0, 1).
+	Margin(0, 0)
+
 type ModalManager struct {
-	quit       QuitModal
-	search     SubredditSearchModal
-	spinner    SpinnerModal
-	errorModal ErrorModal
-	state      SessionState
-	style      lipgloss.Style
-	onClose    tea.Cmd
+	quit         QuitModal
+	search       SubredditSearchModal
+	spinner      SpinnerModal
+	errorModal   ErrorModal
+	imagePreview ImagePreviewModal
+	state        SessionState
+	style        lipgloss.Style
+	imageStyle   lipgloss.Style
+	onClose      tea.Cmd
 }
 
 func NewModalManager() ModalManager {
 	return ModalManager{
-		quit:       NewQuitModal(),
-		search:     NewSubredditSearchModal(),
-		spinner:    NewSpinnerModal(),
-		errorModal: NewErrorModal(),
-		style:      modalStyle,
+		quit:         NewQuitModal(),
+		search:       NewSubredditSearchModal(),
+		spinner:      NewSpinnerModal(),
+		errorModal:   NewErrorModal(),
+		imagePreview: NewImagePreviewModal(),
+		style:        modalStyle,
+		imageStyle:   imagePreviewModalStyle,
 	}
 }
 
@@ -78,6 +89,9 @@ func (m ModalManager) handleGlobalMessages(msg tea.Msg) (ModalManager, tea.Cmd) 
 	case messages.ShowErrorModalMsg:
 		return m, m.SetErrorWithCallback(msg.ErrorMsg, msg.OnClose)
 
+	case messages.UpdateImagePreviewMsg:
+		return m, m.SetImagePreview(string(msg))
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc", "q":
@@ -108,6 +122,9 @@ func (m ModalManager) handleFocusedMessages(msg tea.Msg) (ModalManager, tea.Cmd)
 	case showingError:
 		m.errorModal, cmd = m.errorModal.Update(msg)
 		return m, cmd
+	case showingImagePreview:
+		m.imagePreview, cmd = m.imagePreview.Update(msg)
+		return m, cmd
 	default:
 		return m, nil
 	}
@@ -123,6 +140,14 @@ func (m ModalManager) View(background Viewer) string {
 		return PlaceModal(m.search, background, lipgloss.Center, lipgloss.Center, m.style)
 	case showingError:
 		return PlaceModal(m.errorModal, background, lipgloss.Center, lipgloss.Center, m.style)
+	case showingImagePreview:
+		return PlaceModal(
+			m.imagePreview,
+			background,
+			lipgloss.Center,
+			lipgloss.Center,
+			m.imageStyle,
+		)
 	default:
 		// This sometimes happens when loading completes before the loading modal finishes rendering
 		return ""
@@ -131,9 +156,12 @@ func (m ModalManager) View(background Viewer) string {
 
 func (m *ModalManager) SetSize(w, h int) {
 	m.search.SetSize(w, h)
+	m.imagePreview.SetSize(w, h)
 
-	modalSize := int((float64(w) * (2)) / 3.0)
-	m.style = m.style.MaxWidth(modalSize)
+	modalWidth := int(float64(w) * 0.97)
+	modalHeight := int(float64(h) * 0.97)
+	m.style = m.style.MaxWidth(modalWidth).MaxHeight(modalHeight)
+	m.imageStyle = m.imageStyle.MaxWidth(modalWidth).MaxHeight(modalHeight)
 }
 
 func (m *ModalManager) Blur() tea.Cmd {
@@ -173,4 +201,14 @@ func (m *ModalManager) SetErrorWithCallback(errorMsg string, onClose tea.Cmd) te
 	m.onClose = onClose
 	m.errorModal.ErrorMsg = errorMsg
 	return messages.OpenModal
+}
+
+func (m *ModalManager) SetImagePreview(content string) tea.Cmd {
+	m.state = showingImagePreview
+	m.imagePreview.Content = content
+	return messages.OpenModal
+}
+
+func (m ModalManager) IsImagePreviewOpen() bool {
+	return m.state == showingImagePreview
 }
